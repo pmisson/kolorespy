@@ -1,0 +1,2 @@
+# kolorespy
+Tool for photometry 
