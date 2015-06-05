@@ -1,0 +1,17 @@
+# IPython log file
+
+import asciitable
+filename='LED_cree.dat'
+datos=asciitable.read(filename)
+datos.wavelength=datos.wavelength*10
+asciitable.write({'relativeIntensity': datos.relativeIntensity, 'wavelength': datos.wavelenght}, 'outfile.dat', Writer=asciitable.NoHeader, names=['relativeIntensity', 'wavelenght'])
+asciitable.write({'relativeIntensity': datos.relativeIntensity, 'wavelength': datos.wavelenght}, 'outfile.dat', Writer=asciitable.NoHeader, names=['relativeIntensity', 'wavelenght'])
+datos
+asciitable.write({'relativeIntensity': datos.relativeIntensity, 'wavelength': datos.wavelenght}, 'outfile.dat', names=['relativeIntensity', 'wavelenght'])
+datos.wavelenght
+datos
+datos.wavelength
+asciitable.write({'relativeIntensity': datos.relativeIntensity, 'wavelength': datos.wavelength}, 'outfile.dat', names=['relativeIntensity', 'wavelength'])
+asciitable.write({'relativeIntensity': datos.relativeIntensity, 'wavelength': datos.wavelength}, 'outfile.dat',Writer=asciitable.NoHeader, names=['relativeIntensity', 'wavelength'])
+get_ipython().magic(u'logstart')
+exit()
