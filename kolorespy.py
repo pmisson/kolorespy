@@ -8,11 +8,90 @@ import numpy as np
 from scipy.integrate import quad
 from scipy.interpolate import UnivariateSpline
 from scipy.interpolate import InterpolatedUnivariateSpline
-def normaliza(X):
+import os
+import re
+
+def normaliza(X): #Normalize to the maximum
     max=np.max(X.intrel)
     X.intrel=X.intrel/max
     return X
 
+def srtoarcsec2(X): #Change of units
+    X=X* 4.254517e+10
+    return X
+
+def srtoarcsec2(X): #Change of units
+    X=X* 2.3504431e-11
+    return X
+
+def ergstoW(X): #Change of units
+      X=X* 1e-07
+      return X
+def Wtoergs(X): #Change of units
+      X=X/1e-07
+      return X
+
+def cm_2tom_2(X): #Change of units
+      X=X*10000
+      return X
+
+def m_2tocm_2(X): #Change of units
+      X=X/10000
+      return X
+
+def Angstrontonm(X): #Change of units
+      X=X/10
+      return X
+
+def nmtoAngstron(X): #Change of units
+      X=X*10
+      return X
+
+def ABtoFlux(AB,filtro): #AB magnitudes to flux #[W cm -2 arsec-2 amstrong-1]
+    w=np.sum(filtro.intrel)/float(filtro.size)
+    Flux=10^((AB-5*np.log10(w)-2.401)/-2.5)
+    return Flux
+def FluxtoAB(Flux,filtro): #Flux [W cm -2 arsec-2 amstrong-1] to AB
+    w=np.sum(filtro.intrel)/float(filtro.size)
+    AB = -2.5*np.log10(Flux)-5*np.log10(w)+2.401 #[W cm -2 arsec-2 amstrong-1]
+    return AB
+
+
+#
+#
+#   Candela definition: http://physics.nist.gov/cuu/Units/candela.html
+#
+#
+####################################
+c=299792458.0
+frec=540*10**12
+lamnda=c/frec
+Inten= 1.0/683#[W.str]
+waveref=np.arange(250,15000,1)
+intesity=np.arange(250.0,15000.0,1)*0
+ncd=list(waveref).index(int(lamnda*1E10))
+intesity[ncd]=1.0/683
+
+#intensityAB=Wtoergs(X)
+cd=np.recarray((len(waveref),),dtype=[('wave', float), ('flux', float)])
+cd.wave=np.array(waveref)
+cd.flux=np.array(intesity)
+
+####################################
+
+
+####################
+#
+# AB magnitude definition #erg s-1 cm-2 Amstrong-1 
+#
+# The AB magnitude system is defined as (Oke and Gunn 1983)
+# where F_nu is the flux in erg cm-2 s-1 Hz-1
+#
+# AB = V +AB_nu = - 2.5 *logF_nu  - 48.60
+#
+#   Here it is used in #erg s-1 cm-2 Amstrong-1 
+#
+####################
 waveref=np.arange(250,15000,1)
 NPMAX=10000   
 WL_VEGA_AB=[]
@@ -23,6 +102,25 @@ for X in range(NPMAX):
     FLUX_VEGA1=0.1088/(WL_VEGA1*WL_VEGA1)
     FLUX_VEGA_AB.append(FLUX_VEGA1)
 
+
+
+
+AB=np.recarray((len(FLUX_VEGA_AB),),dtype=[('wave', float), ('flux', float)])
+AB.wave=np.array(WL_VEGA_AB)
+AB.flux=np.array(FLUX_VEGA_AB) #erg s-1 cm-2 Amstrong-1
+
+####################
+#
+# AB magnitude definition END
+#
+####################
+
+####################
+#
+# ST magnitude definition 
+#
+####################
+
 WL_VEGA_ST=[]
 FLUX_VEGA_ST=[]
 for X in range(NPMAX):
@@ -31,25 +129,30 @@ for X in range(NPMAX):
     FLUX_VEGA1=3.63E-9
     FLUX_VEGA_ST.append(FLUX_VEGA1)
 
-#FLUX_VEGA_AB=np.array(FLUX_VEGA_AB,dtype=[('flux', float)])
-#WL_VEGA_AB=np.array(WL_VEGA_AB,dtype=[('wave', float)])
+####################
+#
+# ST magnitude definition END
+#
+####################
 
-#AB=zip(WL_VEGA_AB,FLUX_VEGA_AB)
-AB=np.recarray((len(FLUX_VEGA_AB),),dtype=[('wave', float), ('flux', float)])
-AB.wave=np.array(WL_VEGA_AB)
-AB.flux=np.array(FLUX_VEGA_AB) #erg s-1 cm-2 Amstrong-1
-sun_lambda=asciitable.read('SUN_CIE.txt')
+sun_lambda=asciitable.read('SUN_CIE.txt') #Cie D65 Sun spectrum
 
 #filename='outfile.dat'
-filename=sys.argv[1]
-spectro=asciitable.read(filename)
-B_D3=asciitable.read("B_D3.csv")
+#filename=sys.argv[1]
+#spectro=asciitable.read(filename)
+
+####################
+#
+# Filters Start
+#
+####################
+B_D3=asciitable.read("B_D3.csv") #Nikon D3
 G_D3=asciitable.read("G_D3.csv")
 R_D3=asciitable.read("R_D3.csv")
-B_D3s=asciitable.read("B_D3s.csv")
+B_D3s=asciitable.read("B_D3s.csv") #Nikon D3s
 G_D3s=asciitable.read("G_D3s.csv")
 R_D3s=asciitable.read("R_D3s.csv")
-U_johnson=asciitable.read("U_johnson.csv")
+U_johnson=asciitable.read("U_johnson.csv") #Filters
 B_johnson=asciitable.read("B_johnson.csv")
 V_johnson=asciitable.read("V_johnson.csv")
 R_johnson=asciitable.read("R_johnson.csv")
@@ -61,26 +164,32 @@ SQM_LICA=asciitable.read("SQM_LICA.csv")
 VIIRS_2013=asciitable.read("VIIRS_2013.csv")
 DMSP_1999=asciitable.read("DMSP_1999.csv")
 
+####################
+#
+# Filters end
+#
+####################
+
 def normaliza(X):
     max=np.max(X.intrel)
     X.intrel=X.intrel/max
     return X
+if 0:
+    fig, (ax0,ax1,ax2) = plt.subplots(nrows=3)
 
-fig, (ax0,ax1,ax2) = plt.subplots(nrows=3)
-
-ax0.plot(WL_VEGA_AB, FLUX_VEGA_AB)
-ax0.plot(WL_VEGA_ST, FLUX_VEGA_ST)
-ax0.set_title('Reference AB')
-ax1.plot(spectro.col2, spectro.col1)
-ax1.set_title('Spectra')
-ax2.plot(photo.wave,photo.intrel)
-ax2.plot(psas.wave,psas.intrel)
-ax2.plot(scoto.wave,scoto.intrel)
-ax2.plot(msas.wave,msas.intrel)
-ax2.set_title('Filter')
-plt.show()
+    ax0.plot(WL_VEGA_AB, FLUX_VEGA_AB)
+    ax0.plot(WL_VEGA_ST, FLUX_VEGA_ST)
+    ax0.set_title('Reference AB')
+    ax1.plot(spectro.col2, spectro.col1)
+    ax1.set_title('Spectra')
+    ax2.plot(photo.wave,photo.intrel)
+    ax2.plot(psas.wave,psas.intrel)
+    ax2.plot(scoto.wave,scoto.intrel)
+    ax2.plot(msas.wave,msas.intrel)
+    ax2.set_title('Filter')
+    plt.show()
 #AB_ref = np.array(WL_VEGA_AB, dtype=[('wave', float)])
-def mag(filtroX,espectro,referencia):
+def mag(filtroX,espectro,referencia): #Calculate the sintetic magnitude and also the Intensity.
     if 0:
      if filtroX.wave[-1]>espectro.col2[-1]:
         dif=filtroX.wave[-1]-espectro.col2[-1]
@@ -107,7 +216,7 @@ def mag(filtroX,espectro,referencia):
     I=Up[0]/Dn[0]
     return m,I
 
-def IndiceIsoLux(filtroX,espectro,referencia,photo):
+def IndiceIsoLux(filtroX,espectro,referencia,photo): #Calculate Index as is definide in http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0067798
     s = InterpolatedUnivariateSpline(espectro.col2, espectro.col1, k=3)
     ref =  InterpolatedUnivariateSpline(referencia.wave, referencia.flux, k=3)
     filtro = InterpolatedUnivariateSpline(filtroX.wave, filtroX.intrel,k=3)
@@ -130,89 +239,92 @@ def IndiceIsoLux(filtroX,espectro,referencia,photo):
     
     return result
 
-m_Uj,I_Uj=mag(U_johnson,spectro,AB)
-m_Bj,I_Bj=mag(B_johnson,spectro,AB)
-m_Vj,I_Vj=mag(V_johnson,spectro,AB)
-m_Rj,I_Vj=mag(R_johnson,spectro,AB)
-m_Bn,I_Bn=mag(B_D3,spectro,AB)
-m_Gn,I_Gn=mag(G_D3,spectro,AB)
-m_Rn,I_Rn=mag(R_D3,spectro,AB)
-m_SQM,I_Rn=mag(SQM_LICA,spectro,AB)
-m_VIIRS,I_VIIRS=mag(VIIRS_2013,spectro,AB)
-m_DMSP,I_DMSP=mag(DMSP_1999,spectro,AB)
-m_photo,I_photo=mag(photo,spectro,AB)
-m_scoto,I_scoto=mag(scoto,spectro,AB)
-Uj_Vj=m_Uj-m_Vj
-Bj_Vj=m_Bj-m_Vj
-Rj_Vj=m_Rj-m_Vj
-Bn_Vj=m_Bn-m_Vj
-Gn_Vj=m_Gn-m_Vj
-Rn_Vj=m_Rn-m_Vj
-SQM_Vj=m_SQM-m_Vj
-Bn_Gn=I_Bn/I_Gn
-Gn_Rn=I_Gn/I_Rn
-
-c=299792458.0
-frec=540*10**12
-lamnda=c/frec
-Inten= 1.0/683#[W.str]
-waveref=np.arange(250,15000,1)
-intesity=np.arange(250.0,15000.0,1)*0
-ncd=list(waveref).index(int(lamnda*1E10))
-intesity[ncd]=1.0/683
-
-intensityAB=Wtoergs(X)
-
-cd=np.recarray((len(FLUX_VEGA_AB),),dtype=[('wave', float), ('flux', float)])
-cd.wave=np.array(waveref)
-cd.flux=np.array(intesity)
-
-def srtoarcsec2(X):
-    X=X* 4.254517e+10
-    return X
-
-def srtoarcsec2(X):
-    X=X* 2.3504431e-11
-    return X
-
-def ergstoW(X):
-      X=X* 1e-07
-      return X
-def Wtoergs(X):
-      X=X/1e-07
-      return X
-
-def cm_2tom_2(X):
-      X=X*10000
-      return X
-
-def m_2tocm_2(X):
-      X=X/10000
-      return X
-
-def Angstrontonm(X):
-      X=X/10
-      return X
-
-def nmtoAngstron(X):
-      X=X*10
-      return X
 
 
-def ABtoFlux(AB,filtro):
-    w=np.sum(filtro.intrel)/float(filtro.size)
-    Flux=10^((AB-5*np.log10(w)-2.401)/-2.5)
-    return Flux
-def FluxtoAB(Flux,filtro):
-    w=np.sum(filtro.intrel)/float(filtro.size)
-    AB = -2.5*np.log10(Flux)-5*np.log10(w)+2.401 #[W cm -2 arsec-2 amstrong-1]
-    return AB
 
-#def FluxtoCandela(Flux,filtro,photo):
+def calculamagnitudes(filename):
+    spectro=asciitable.read(filename)
+    m_Uj,I_Uj=mag(U_johnson,spectro,AB)
+    m_Bj,I_Bj=mag(B_johnson,spectro,AB)
+    m_Vj,I_Vj=mag(V_johnson,spectro,AB)
+    m_Rj,I_Vj=mag(R_johnson,spectro,AB)
+    m_Bn,I_Bn=mag(B_D3,spectro,AB)
+    m_Gn,I_Gn=mag(G_D3,spectro,AB)
+    m_Rn,I_Rn=mag(R_D3,spectro,AB)
+    m_SQM,I_Rn=mag(SQM_LICA,spectro,AB)
+    m_VIIRS,I_VIIRS=mag(VIIRS_2013,spectro,AB)
+    m_DMSP,I_DMSP=mag(DMSP_1999,spectro,AB)
+    m_photo,I_photo=mag(photo,spectro,AB)
+    m_scoto,I_scoto=mag(scoto,spectro,AB)
+    Uj_Vj=m_Uj-m_Vj
+    Bj_Vj=m_Bj-m_Vj
+    Rj_Vj=m_Rj-m_Vj
+    Bn_Vj=m_Bn-m_Vj
+    Gn_Vj=m_Gn-m_Vj
+    Rn_Vj=m_Rn-m_Vj
+    SQM_Vj=m_SQM-m_Vj
+    Bn_Gn=I_Bn/I_Gn
+    Gn_Rn=I_Gn/I_Rn
+    i_sli=IndiceIsoLux(scoto,spectro,sun_lambda,photo)
+    i_msi=IndiceIsoLux(msas,spectro,sun_lambda,photo)
+    i_ipi=IndiceIsoLux(psas,spectro,sun_lambda,photo)
+    return Uj_Vj,Bj_Vj,Bn_Vj,Rn_Vj,SQM_Vj,Bn_Gn,Gn_Rn,i_sli,i_msi,i_ipi
+
+path=os.getcwd()
+lista=os.listdir(path)
+lista2=" ".join(lista)
+lista3=re.findall(r'[a-zA-Z_0-9]+.dat',lista2)
+lista3.sort()
+listafiles=lista3
+
+
+
+spec=np.recarray((len(listafiles),),dtype=[(name, S20),('Uj_Vj', float), ('Bj_Vj', float),('Rn_Vj', float), ('SQM_Vj', float), ('Bn_Gn', float), ('Gn_Rn', float),('i_sli', float),('i_msi', float),('i_ipi', float)])
+for X in range(len(listafiles)):
+    spec[X].name=listafiles[X].split('.')[0]
+    spec[X].Uj_Vj,spec[X].Bj_Vj,spec[X].Rn_Vj,spec[X].SQM_Vj,spec[x].Bn_Gn,spec[X].Gn_Rn,spec[X].i_sli,spec[X].i_msi,spec[X].i_ipi=calculamagnitudes(listafiles[X])
+
+# Canales DMSP/OLS y VIIRS
+# Espectros de lamparas
+# Respuesta de Nikon D3s de LICA
+# Colores esperados en ISS pictures
+
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure, show, rc, grid, savefig
+from matplotlib.ticker import MultipleLocator
+import matplotlib.pyplot as plt
+import math
+import csv
+import numpy as np
+import sys
+from pylab import *
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+import asciitable
+
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = ['Verdana']
+plt.rcParams['font.size'] = 20
+plt.rcParams['lines.linewidth'] = 4.
+plt.rcParams['axes.labelsize'] = 'large'
+plt.rcParams['grid.linewidth'] = 1.0
+plt.rcParams['grid.linestyle'] = ':'
+plt.rcParams['xtick.minor.size']=4
+plt.rcParams['xtick.major.size']=8
+plt.rcParams['figure.figsize'] = 9,9
+plt.rcParams['figure.subplot.bottom'] = 0.15
+#plt.rcParams['ytick.labelsize'] = 10
+
+
+plt.plot(spec.Bn_Gn,spec.Gn_Rn,'ko')
+plt.xlabel("B/G")
+plt.ylabel("G/R")
+plt.title("ISS colors for typical lamps")
+plt.xlim(0,0.7)
+plt.ylim(0,1.4)
+plt.savefig('colores_espectros.png')
+plt.show()    
     
 
-i_sli=IndiceIsoLux(scoto,spectro,sun_lambda,photo)
-i_msi=IndiceIsoLux(msas,spectro,sun_lambda,photo)
-i_ipi=IndiceIsoLux(psas,spectro,sun_lambda,photo)
+
 
 
