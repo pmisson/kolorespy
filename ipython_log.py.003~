@@ -1,0 +1,45 @@
+# IPython log file
+
+import asciitable
+import numpy as np
+waveref=np.arange(250,15000,1)
+waveref
+WL_VEGA=[]
+NPMAX=10000
+for X in range(NPMAX):
+    WL_VEGA.append(1000.0+(X/(NPMAX-1)*(30000.0-1000.0))
+    
+    
+    )
+    
+WL_VEGA
+for X in range(NPMAX):
+    WL_VEGA.append(1000.0+(X/(NPMAX-1)*(30000.0-1000.0))
+    
+    
+    )
+    
+for X in range(NPMAX):
+    WL_VEGA.append(1000.0+(float(X)/(NPMAX-1)*(30000.0-1000.0))
+    
+    
+    )
+    
+WL_VEGA
+WL_VEGA=[]
+for X in range(NPMAX):
+    WL_VEGA.append(1000.0+(float(X)/(NPMAX-1)*(30000.0-1000.0))
+    
+    
+    )
+    
+WL_VEGA
+for X in range(NPMAX):
+    WL_VEGA1=1000.0+(float(X)/(NPMAX-1)*(30000.0-1000.0))
+    
+    
+    )
+    WL_VEGA.append(WL_VEGA1)
+    
+get_ipython().magic(u'logstart')
+exit()

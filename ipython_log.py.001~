@@ -1,45 +1,75 @@
 # IPython log file
-
-import asciitable
+# -*- coding: utf-8 -*-
 import numpy as np
-waveref=np.arange(250,15000,1)
-waveref
-WL_VEGA=[]
-NPMAX=10000
-for X in range(NPMAX):
-    WL_VEGA.append(1000.0+(X/(NPMAX-1)*(30000.0-1000.0))
-    
-    
-    )
-    
-WL_VEGA
-for X in range(NPMAX):
-    WL_VEGA.append(1000.0+(X/(NPMAX-1)*(30000.0-1000.0))
-    
-    
-    )
-    
-for X in range(NPMAX):
-    WL_VEGA.append(1000.0+(float(X)/(NPMAX-1)*(30000.0-1000.0))
-    
-    
-    )
-    
-WL_VEGA
-WL_VEGA=[]
-for X in range(NPMAX):
-    WL_VEGA.append(1000.0+(float(X)/(NPMAX-1)*(30000.0-1000.0))
-    
-    
-    )
-    
-WL_VEGA
-for X in range(NPMAX):
-    WL_VEGA1=1000.0+(float(X)/(NPMAX-1)*(30000.0-1000.0))
-    
-    
-    )
-    WL_VEGA.append(WL_VEGA1)
-    
-get_ipython().magic(u'logstart')
-exit()
+import asciitable,sys
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import quad
+from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import InterpolatedUnivariateSpline
+import os
+import re
+from sklearn import linear_model, datasets
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.collections import PatchCollection
+import matplotlib.lines as mlines
+
+if 1: #Cargo alpecto de graficas
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['font.sans-serif'] = ['Verdana']
+    plt.rcParams['font.size'] = 10.
+    plt.rcParams['lines.linewidth'] = 2.
+    plt.rcParams['axes.labelsize'] = 'large'
+    plt.rcParams['grid.linewidth'] = 1.0
+    plt.rcParams['grid.linestyle'] = ':'
+    plt.rcParams['xtick.minor.size']=4
+    plt.rcParams['xtick.major.size']=8
+    plt.rcParams['image.aspect']='equal'
+    #plt.ticklabel_format(style='sci',axis='x',scilimits=(-2,3))
+
+hps=asciitable.read('HPS_High_Pressure_Sodium_2133K_F_Fisicas.dat')
+LED1=asciitable.read('LED_Moncloa.dat')
+LED2=asciitable.read('LED_Ledtech_PAR20.dat')
+LED3=asciitable.read('LED_Lytepro7_Architectural.dat')
+msas=asciitable.read("msas.csv")
+scoto=asciitable.read("scoto.csv")
+photo=asciitable.read("photo.csv")
+
+
+plt.plot(photo.wave,photo.intrel,'g-',label='Vision normal')
+plt.plot(scoto.wave,scoto.intrel,'b-',label='Vision nocturna')
+plt.plot(msas.wave,msas.intrel,'k-',label='Regulacion fisiologica')
+plt.plot(LED2.col2,LED2.col1/np.max(LED2.col1),'r-',label='LED 5900k')
+plt.plot(hps.col2,hps.col1/np.max(hps.col1),'m-',label='Sodio Alta presion')
+plt.xlabel('Longitud de onda ($\AA$)')
+plt.ylabel('Intensidad relativa')
+plt.legend()
+plt.savefig('LED_5900km.png')
+plt.show()
+
+
+plt.plot(photo.wave,photo.intrel,'g-',label='Vision normal')
+plt.plot(scoto.wave,scoto.intrel,'b-',label='Vision nocturna')
+plt.plot(msas.wave,msas.intrel,'k-',label='Regulacion fisiologica')
+plt.plot(LED1.col2,LED1.col1/np.max(LED1.col1),'r-',label='LED 3400k')
+plt.plot(hps.col2,hps.col1/np.max(hps.col1),'m-',label='Sodio Alta presion')
+plt.xlabel('Longitud de onda ($\AA$)')
+plt.ylabel('Intensidad relativa')
+plt.legend()
+plt.savefig('LED_3400km.png')
+plt.show()
+
+
+
+plt.plot(photo.wave,photo.intrel,'g-',label='Vision normal')
+plt.plot(scoto.wave,scoto.intrel,'b-',label='Vision nocturna')
+plt.plot(msas.wave,msas.intrel,'k-',label='Regulacion fisiologica')
+plt.plot(LED3.col2,LED3.col1/np.max(LED3.col1),'r-',label='LED ambar')
+plt.plot(hps.col2,hps.col1/np.max(hps.col1),'m-',label='Sodio Alta presion')
+plt.xlabel('Longitud de onda ($\AA$)')
+plt.ylabel('Intensidad relativa')
+plt.legend()
+plt.savefig('LED_ambarkm.png')
+plt.show()

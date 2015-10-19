@@ -1,0 +1,148 @@
+# IPython log file
+
+JAZ=asciitable.read("JAZ_99.csv")
+import asciitable
+JAZ=asciitable.read("JAZ_99.csv")
+JAZ
+JAZ['B_D3s']
+JAZ['(05)']=10**((JAZ['B_D3s']-JAZ['G_D3s'])/2.5)
+JAZ['(07)']=10**((JAZ['G_D3s']-JAZ['R_D3s'])/2.5)
+get_ipython().magic(u'pwd ')
+ISS=asciitable.read('zonas_medidas.csv')
+ISS=asciitable.read('zonas_medidas.csv')
+ISS
+ISS=asciitable.read('zonas_medidas.csv')
+ISS=asciitable.read('zonas_medidas.csv',guess=False)
+ISS=asciitable.read('zonas_medidas.csv',guess=False)
+ISS=asciitable.read('zonas_medidas.csv')
+ISS
+GR=ISS.G2/ISS.R1
+GR=ISS['G2']/ISS['R1']
+ISS=asciitable.read('zonas_medidas.csv',delimiter=';')
+ISS
+GR=ISS.G2/ISS.R1
+GR
+BG=ISS.B4*2.4/ISS.G2
+get_ipython().magic(u'logstart')
+ISS
+JAZ
+plt.plot(GR,BG,'ko')
+plt.text(GR,BG,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(07)'],JAZ['(05)'],'g*')
+plt.text(JAZ['(07)'],JAZ['(05)'],JAZ.name,ha='left', va='bottom')
+plt.show()
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure, show, rc, grid, savefig
+from matplotlib.ticker import MultipleLocator
+import math
+import csv
+import numpy as np
+import sys
+from pylab import *
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+import asciitable
+plt.plot(GR,BG,'ko')
+plt.text(GR,BG,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(07)'],JAZ['(05)'],'g*')
+plt.text(JAZ['(07)'],JAZ['(05)'],JAZ.name,ha='left', va='bottom')
+plt.show()
+RG=ISS.R1/ISS.G2
+RG
+GR
+RN=ISS.R1/ISS.Npix
+RN
+RND=RN-RN[0]
+RND
+GN=ISS.G2/ISS.Npix
+GND=GN-GN[0]
+BN=ISS.B4/ISS.Npix
+BND=BN-BN[0]
+GR=GND/RND
+BG=BND/GND
+GR
+BG
+plt.plot(BG,GR,'ko')
+plt.text(BG,GR,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(05)'],JAZ['(07)'],'g*')
+plt.text(JAZ['(05)'],JAZ['(07)'],JAZ.name,ha='left', va='bottom')
+plt.show()
+JAZ['(05)']=10**((JAZ['G_D3s']-JAZ['B_D3s'])/2.5)
+JAZ['(07)']=10**((JAZ['R_D3s']-JAZ['G_D3s'])/2.5)
+plt.plot(BG,GR,'ko')
+plt.text(BG,GR,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(05)'],JAZ['(07)'],'g*')
+plt.text(JAZ['(05)'],JAZ['(07)'],JAZ.name,ha='left', va='bottom')
+plt.show()
+plt.text(JAZ['(05)'],JAZ['(07)'],np.str(JAZ.name),ha='left', va='bottom')
+plt.show()
+plt.text(JAZ['(05)'][0],JAZ['(07)'][0],JAZ.name[0],ha='left', va='bottom')
+plt.show()
+JAZ.name
+plt.plot(BG,GR,'ko')
+plt.text(BG,GR,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(05)'],JAZ['(07)'],'g*')
+plt.text(JAZ['(05)'][0],JAZ['(07)'][0],JAZ.name[0],ha='left', va='bottom')
+plt.text(JAZ['(05)'][1],JAZ['(07)'][1],JAZ.name[1],ha='left', va='bottom')
+plt.text(JAZ['(05)'][2],JAZ['(07)'][2],JAZ.name[2],ha='left', va='bottom')
+plt.text(JAZ['(05)'][3],JAZ['(07)'][3],JAZ.name[3],ha='left', va='bottom')
+plt.text(JAZ['(05)'][4],JAZ['(07)'][4],JAZ.name[4],ha='left', va='bottom')
+plt.text(JAZ['(05)'][5],JAZ['(07)'][5],JAZ.name[5],ha='left', va='bottom')
+plt.text(JAZ['(05)'][6],JAZ['(07)'][6],JAZ.name[6],ha='left', va='bottom')
+plt.text(JAZ['(05)'][7],JAZ['(07)'][7],JAZ.name[7],ha='left', va='bottom')
+plt.text(JAZ['(05)'][8],JAZ['(07)'][8],JAZ.name[8],ha='left', va='bottom')
+plt.text(JAZ['(05)'][9],JAZ['(07)'][9],JAZ.name[9],ha='left', va='bottom')
+plt.show()
+plt.plot(BG,GR,'ko')
+plt.plot(JAZ['(05)'],JAZ['(07)'],'g*')
+plt.text(JAZ['(05)'][0],JAZ['(07)'][0],JAZ.name[0],ha='left', va='bottom')
+plt.show()
+plt.plot(BG,GR,'ko')
+plt.text(BG,GR,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(05)'],JAZ['(07)'],'g*')
+plt.text(JAZ['(05)'][0],JAZ['(07)'][0],JAZ.name[0],ha='left', va='bottom')
+plt.text(JAZ['(05)'][1],JAZ['(07)'][1],JAZ.name[1],ha='left', va='bottom')
+plt.show()
+JAZ.name[1]
+plt.plot(BG,GR,'ko')
+plt.text(BG,GR,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(05)'],JAZ['(07)'],'g*')
+plt.text(JAZ['(05)'][1],JAZ['(07)'][1],JAZ.name[1],ha='left', va='bottom')
+plt.show()
+plt.plot(BG,GR,'ko')
+plt.text(BG,GR,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(05)'],JAZ['(07)'],'g*')
+plt.text(JAZ['(05)'][0],JAZ['(07)'][0],JAZ.name[0],ha='left', va='bottom')
+plt.show()
+plt.plot(BG,GR,'ko')
+#plt.text(BG,GR,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(05)'],JAZ['(07)'],'g*')
+plt.text(JAZ['(05)'][0],JAZ['(07)'][0],JAZ.name[0],ha='left', va='bottom')
+plt.text(JAZ['(05)'][1],JAZ['(07)'][1],JAZ.name[1],ha='left', va='bottom')
+plt.text(JAZ['(05)'][2],JAZ['(07)'][2],JAZ.name[2],ha='left', va='bottom')
+plt.text(JAZ['(05)'][3],JAZ['(07)'][3],JAZ.name[3],ha='left', va='bottom')
+plt.text(JAZ['(05)'][4],JAZ['(07)'][4],JAZ.name[4],ha='left', va='bottom')
+plt.text(JAZ['(05)'][5],JAZ['(07)'][5],JAZ.name[5],ha='left', va='bottom')
+plt.text(JAZ['(05)'][6],JAZ['(07)'][6],JAZ.name[6],ha='left', va='bottom')
+plt.text(JAZ['(05)'][7],JAZ['(07)'][7],JAZ.name[7],ha='left', va='bottom')
+plt.text(JAZ['(05)'][8],JAZ['(07)'][8],JAZ.name[8],ha='left', va='bottom')
+plt.text(JAZ['(05)'][9],JAZ['(07)'][9],JAZ.name[9],ha='left', va='bottom')
+plt.show()
+plt.plot(BG,GR,'ko')
+#plt.text(BG,GR,ISS.name,ha='left', va='bottom') 
+plt.plot(JAZ['(05)'],JAZ['(07)'],'g*')
+plt.text(JAZ['(05)'][0],JAZ['(07)'][0],JAZ.name[0],ha='left', va='bottom')
+plt.text(JAZ['(05)'][1],JAZ['(07)'][1],JAZ.name[1],ha='left', va='bottom')
+plt.text(JAZ['(05)'][2],JAZ['(07)'][2],JAZ.name[2],ha='left', va='bottom')
+plt.text(JAZ['(05)'][3],JAZ['(07)'][3],JAZ.name[3],ha='left', va='bottom')
+plt.text(JAZ['(05)'][4],JAZ['(07)'][4],JAZ.name[4],ha='left', va='bottom')
+plt.text(JAZ['(05)'][5],JAZ['(07)'][5],JAZ.name[5],ha='left', va='bottom')
+plt.text(JAZ['(05)'][6],JAZ['(07)'][6],JAZ.name[6],ha='left', va='bottom')
+plt.text(JAZ['(05)'][7],JAZ['(07)'][7],JAZ.name[7],ha='left', va='bottom')
+plt.text(JAZ['(05)'][8],JAZ['(07)'][8],JAZ.name[8],ha='left', va='bottom')
+plt.text(JAZ['(05)'][9],JAZ['(07)'][9],JAZ.name[9],ha='left', va='bottom')
+plt.xlabel("B/G")
+plt.ylabel("G/R")
+plt.title("ISS colors for typical lamps")
+plt.show()
+get_ipython().magic(u'logstart')
+exit()

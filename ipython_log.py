@@ -1,8 +1,25 @@
 # IPython log file
 
-import asciitable
-filename='LED_cree.dat'
-datos=asciitable.read(filename)
-datos.wavelength=datos.wavelength*10
-asciitable.write({'relativeIntensity': datos.relativeIntensity, 'wavelength': datos.wavelength}, filename.split('.')[0]+'.dat',Writer=asciitable.NoHeader, names=['relativeIntensity', 'wavelength'])
-
+import asciitable,sys
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import quad
+from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import InterpolatedUnivariateSpline
+import os
+import re
+from sklearn import linear_model, datasets
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.collections import PatchCollection
+import matplotlib.lines as mlines
+LPS=asciitable.read('LPS_Low_Pressure_Sodium_1797K_LICA.dat')
+PC_ambar=asciitable.read('LED_Lytepro7_Architectural.dat')
+ambar=asciitable.read('LED_595nm_LICA.dat')
+plt.plot(PC_ambar.col2,PC_ambar.col1)
+plt.plot(LPS.col2,LPS.col1)
+plt.plot(ambar.col2,ambar.col1)
+plt.show()
+get_ipython().magic(u'logstart')
+exit()
