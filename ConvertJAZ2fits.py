@@ -60,11 +60,15 @@ def writefits(name1):
 	os.system(comando1)
 	
 espc12=asciitable.read(namefile,header_start=17,data_start=18,data_end=2066,guess=False,delimiter='\t')
+curvaresp=asciitable.read('CorrectionJAZ.cor')
 x=espc12.W*10
 STWV=x[0]
 disper=(x[-1]-x[0])/2048
-y=espc12.S-espc12.D
+y=espc12.S#-espc12.D
+curvaresp.col2[curvaresp.col1<300]=1
+y=y*curvaresp.col2
 asciitable.write({'x': x, 'y': y}, 'outfile.dat',Writer=asciitable.NoHeader )
+asciitable.write({'x': x, 'y': y}, namefile[:-4]+'.dat',Writer=asciitable.NoHeader,names=['y','x'] )
 name1=namefile[:-4]+'.u'
 gen(name1,STWV,disper)
 writefits(name1)
