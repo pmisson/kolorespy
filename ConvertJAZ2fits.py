@@ -3,6 +3,8 @@
 #By A. Sanchez de Miguel v1.2
 import asciitable
 import os,sys
+from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import InterpolatedUnivariateSpline
 namefile=sys.argv[1]
 
 def gen(name1,STWV,disper):
@@ -65,7 +67,7 @@ x=espc12.W*10
 STWV=x[0]
 disper=(x[-1]-x[0])/2048
 y=espc12.S#-espc12.D
-curvaresp.col2[curvaresp.col1<300]=1
+curvaresp.col2[curvaresp.col1<300]=0
 y=y*curvaresp.col2
 asciitable.write({'x': x, 'y': y}, 'outfile.dat',Writer=asciitable.NoHeader )
 asciitable.write({'x': x, 'y': y}, namefile[:-4]+'.dat',Writer=asciitable.NoHeader,names=['y','x'] )

@@ -1,5 +1,5 @@
 writefits<<teescribo
-SPECTRUM0005.u
-SPECTRUM0005.fits
+LED_Moncloa.u
+LED_Moncloa.fits
 n
 teescribo

@@ -17,6 +17,30 @@ import matplotlib.patches as mpatches
 from matplotlib.collections import PatchCollection
 import matplotlib.lines as mlines
 
+#import matplotlib.style
+#matplotlib.style.use('ggplot')
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+import pandas as pd
+if 0:
+    d = {'x': x, 'y': y, 'color': c}
+
+    df = pd.DataFrame(d)
+
+    mm = df.groupby('color')
+
+    cat = ['R', 'G', 'B']
+    char = ['*', '.', 'o']
+def scatter2(cat,char,mm):
+    for ct, ch in zip(cat, char):
+       tab = mm.get_group(ct)
+       plt.scatter(tab['x'], tab['y'], marker=ch,color=ct)
+
+    #plt.show()
+
+
+
 def ransacfit(X,y):
     X=X.reshape(len(X),1)
     model_ransac = linear_model.RANSACRegressor(linear_model.LinearRegression())
@@ -349,29 +373,45 @@ def IndiceIsoLux(filtroX,espectro,referencia,photo): #Calculate Index as is defi
 
 
 
-def calculamagnitudes(filename):
+def calculamagnitudes(filename,clouds):
     spectro=asciitable.read(filename)
+    specamply=asciitable.read(clouds)
+    cen=spectro.col2<7000
+    cen2=spectro.col2<4000
+    cen3=cen-cen2
+    wave=np.sum(spectro.col2[cen3]*spectro.col1[cen3])/np.sum(spectro.col1[cen3])
+    sA = InterpolatedUnivariateSpline(specamply.col1, specamply.col2, k=3)
+    s_A=sA(spectro.col2)
+    spectroA=spectro.copy()
+    spectroA.col1=spectroA.col1*(s_A)
     m_Uj,I_Uj=mag(U_johnson,spectro,AB)
     m_Bj,I_Bj=mag(B_johnson,spectro,AB)
+    m_BjA,I_BjA=mag(B_johnson,spectroA,AB)
     m_Vj,I_Vj=mag(V_johnson,spectro,AB)
+    m_VjA,I_VjA=mag(V_johnson,spectroA,AB)
     m_Rj,I_Vj=mag(R_johnson,spectro,AB)
     m_Bn,I_Bn=mag(B_D3,spectro,AB)
     m_Gn,I_Gn=mag(G_D3,spectro,AB)
     m_Rn,I_Rn=mag(R_D3,spectro,AB)
     m_SQM,I_Rn=mag(SQM_LICA,spectro,AB)
+    m_SQMA,I_RnA=mag(SQM_LICA,spectroA,AB)
     m_VIIRS,I_VIIRS=mag(VIIRS_2013,spectro,AB)
     m_DMSP,I_DMSP=mag(DMSP_1999,spectro,AB)
     m_photo,I_photo=mag(photo,spectro,AB)
     m_scoto,I_scoto=mag(scoto,spectro,AB)
+    m_photoA,I_photoA=mag(photo,spectroA,AB)
+    m_scotoA,I_scotoA=mag(scoto,spectroA,AB)
     m_Halpha,I_Halpha=mag(Halpha,spectro,AB)
     m_Hbeta,I_Hbeta=mag(Hbeta,spectro,AB)
     Uj_Vj=m_Uj-m_Vj
     Bj_Vj=m_Bj-m_Vj
+    Bj_VjA=m_BjA-m_VjA
     Rj_Vj=m_Rj-m_Vj
     Bn_Vj=m_Bn-m_Vj
     Gn_Vj=m_Gn-m_Vj
     Rn_Vj=m_Rn-m_Vj
     SQM_Vj=m_SQM-m_Vj
+    SQM_VjA=m_SQMA-m_VjA
     Bn_Gn=I_Bn/I_Gn
     Gn_Rn=I_Gn/I_Rn
     i_sli=IndiceIsoLux(scoto,spectro,sun_lambda,photo)
@@ -394,7 +434,7 @@ def calculamagnitudes(filename):
         #ax2.plot(msas.wave,msas.intrel)
         ax2.set_title('Filter')
         plt.show()
-    return Uj_Vj,Bj_Vj,Bj_Vj,Rj_Vj,SQM_Vj,m_Bn,m_Gn,m_Rn,i_sli,i_msi,i_ipi,Bn_Vj,Gn_Vj,Rn_Vj,m_VIIRS,m_photo,m_scoto,m_SQM,m_Halpha,m_Hbeta,m_Vj
+    return Uj_Vj,Bj_Vj,Bj_VjA,Rj_Vj,SQM_Vj,SQM_VjA,m_Bn,m_Gn,m_Rn,i_sli,i_msi,i_ipi,Bn_Vj,Gn_Vj,Rn_Vj,m_VIIRS,m_photo,m_scoto,m_photoA,m_scotoA,m_SQM,m_SQMA,m_Halpha,m_Hbeta,m_Vj,m_VjA,wave
 
 def filtrog(other,g):
     a=np.where(other<g)
@@ -415,18 +455,31 @@ lista3=re.findall(r'[a-zA-Z_0-9]+\.dat',lista2)
 lista3.sort()
 listafiles=lista3
 
+path=os.getcwd()
+lista=os.listdir(path)
+lista2=" ".join(lista)
+lista4=re.findall(r'[a-zA-Z_0-9+.]+\.doy.dor.dt',lista2)
+lista4.sort()
+listafiles2=lista4
 
 
+clouds='sum_F0.05_AOD_0.1_Hc0.5km.ssc'
 
-
-
-spec=np.recarray((len(listafiles),),dtype=[('num', int),('name', 'S100'),('Uj_Vj', float), ('Bj_Vj', float),('Rj_Vj', float), ('SQM_Vj', float), ('m_Bn', float), ('m_Gn', float),('m_Rn', float),('i_sli', float),('i_msi', float),('i_ipi', float),('Bn_Vj', float),('Gn_Vj', float),('Rn_Vj', float),('m_VIIRS', float),('m_photo', float),('m_scoto', float),('m_SQM', float),('m_Halpha', float),('m_Hbeta', float),('m_Vj', float)])
+spec=np.recarray((len(listafiles),),dtype=[('num', int),('name', 'S100'),('Uj_Vj', float), ('Bj_Vj', float),('Bj_VjA', float),('Rj_Vj', float), ('SQM_Vj', float),('SQM_VjA', float), ('m_Bn', float), ('m_Gn', float),('m_Rn', float),('i_sli', float),('i_msi', float),('i_ipi', float),('Bn_Vj', float),('Gn_Vj', float),('Rn_Vj', float),('m_VIIRS', float),('m_photo', float),('m_scoto', float),('m_photoA', float),('m_scotoA', float),('m_SQM', float),('m_SQMA', float),('m_Halpha', float),('m_Hbeta', float),('m_Vj', float),('m_VjA', float),('wave', float)])
 for X in range(len(listafiles)):
     spec[X].num=X
     spec[X].name=listafiles[X].split('.')[0]
-    spec[X].Uj_Vj,spec[X].Bj_Vj,spec[X].Bj_Vj,spec[X].Rn_Vj,spec[X].SQM_Vj,spec[X].m_Bn,spec[X].m_Gn,spec[X].m_Rn,spec[X].i_sli,spec[X].i_msi,spec[X].i_ipi,spec[X].Bn_Vj,spec[X].Gn_Vj,spec[X].Rn_Vj,spec[X].m_VIIRS,spec[X].m_photo,spec[X].m_scoto,spec[X].m_SQM,spec[X].m_Halpha,spec[X].m_Hbeta,spec[X].m_Vj=calculamagnitudes(listafiles[X])
+    spec[X].Uj_Vj,spec[X].Bj_Vj,spec[X].Bj_VjA,spec[X].Rn_Vj,spec[X].SQM_Vj,spec[X].SQM_VjA,spec[X].m_Bn,spec[X].m_Gn,spec[X].m_Rn,spec[X].i_sli,spec[X].i_msi,spec[X].i_ipi,spec[X].Bn_Vj,spec[X].Gn_Vj,spec[X].Rn_Vj,spec[X].m_VIIRS,spec[X].m_photo,spec[X].m_scoto,spec[X].m_photoA,spec[X].m_scotoA,spec[X].m_SQM,spec[X].m_SQMA,spec[X].m_Halpha,spec[X].m_Hbeta,spec[X].m_Vj,spec[X].m_VjA,spec[X].wave=calculamagnitudes(listafiles[X],clouds)
 
 spec = spec[np.array(np.ones(len(spec))-np.isnan(spec['m_Bn'])).astype(bool)]
+
+spec2=np.recarray((len(listafiles2),),dtype=[('num', int),('name', 'S100'),('Uj_Vj', float), ('Bj_Vj', float),('Bj_VjA', float),('Rj_Vj', float), ('SQM_Vj', float),('SQM_VjA', float), ('m_Bn', float), ('m_Gn', float),('m_Rn', float),('i_sli', float),('i_msi', float),('i_ipi', float),('Bn_Vj', float),('Gn_Vj', float),('Rn_Vj', float),('m_VIIRS', float),('m_photo', float),('m_scoto', float),('m_photoA', float),('m_scotoA', float),('m_SQM', float),('m_SQMA', float),('m_Halpha', float),('m_Hbeta', float),('m_Vj', float),('m_VjA', float),('wave', float)])
+for X in range(len(listafiles2)):
+    spec2[X].num=X
+    spec2[X].name=listafiles2[X].split('.')[0]
+    spec2[X].Uj_Vj,spec2[X].Bj_Vj,spec2[X].Bj_VjA,spec2[X].Rn_Vj,spec2[X].SQM_Vj,spec2[X].SQM_VjA,spec2[X].m_Bn,spec2[X].m_Gn,spec2[X].m_Rn,spec2[X].i_sli,spec2[X].i_msi,spec2[X].i_ipi,spec2[X].Bn_Vj,spec2[X].Gn_Vj,spec2[X].Rn_Vj,spec2[X].m_VIIRS,spec2[X].m_photo,spec2[X].m_scoto,spec2[X].m_photoA,spec2[X].m_scotoA,spec2[X].m_SQM,spec2[X].m_SQMA,spec2[X].m_Halpha,spec2[X].m_Hbeta,spec2[X].m_Vj,spec2[X].m_VjA,spec2[X].wave=calculamagnitudes(listafiles2[X],clouds)
+
+spec2 = spec2[np.array(np.ones(len(spec2))-np.isnan(spec2['m_Bn'])).astype(bool)]
 
 
 
@@ -447,6 +500,31 @@ import sys
 from pylab import *
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import asciitable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = ['Verdana']
@@ -470,36 +548,289 @@ SCG=((10**((spec.m_scoto/-2.5)))/10**((spec.m_Gn/-2.5)))
 VlVIIRS=((10**((spec.m_photo/-2.5)))/10**((spec.m_VIIRS/-2.5)))
 SQM_G=((10**((spec.m_SQM/-2.5)))/10**((spec.m_Gn/-2.5)))
 SQM_Vj=spec.m_SQM-spec.m_Vj
-Ha_G=((10**((spec.m_Halpha/-2.5)))/10**((spec.m_Gn/-2.5)))
-Hb_G=((10**((spec.m_Hbeta/-2.5)))/10**((spec.m_Gn/-2.5)))
+SQMVl=((10**((spec.m_SQM/-2.5)))/10**((spec.m_photo/-2.5)))
+SQMSC=((10**((spec.m_SQM/-2.5)))/10**((spec.m_scoto/-2.5)))
+SQM_Vl=spec.m_SQM-spec.m_photo
+SQM_SC=spec.m_SQM-spec.m_scoto
+SQM_VjA=spec.m_SQMA-spec.m_VjA
+SQM_VlA=spec.m_SQMA-spec.m_photoA
+SQM_SCA=spec.m_SQMA-spec.m_scotoA
+SQM_SQMA=spec.m_SQMA-spec.m_SQM
+
+BG2=((10**((spec2.m_Bn/-2.5)))/10**((spec2.m_Gn/-2.5)))
+GR2=((10**((spec2.m_Gn/-2.5)))/10**((spec2.m_Rn/-2.5)))
+BR2=((10**((spec2.m_Bn/-2.5)))+10**((spec2.m_Rn/-2.5)))/(10**((spec2.m_Gn/-2.5)))
+BR12=((10**((spec2.m_Bn/-2.5)))/10**((spec2.m_VIIRS/-2.5)))
+G_VIIRS2=((10**((spec2.m_Gn/-2.5)))/10**((spec2.m_VIIRS/-2.5)))
+VlG2=((10**((spec2.m_photo/-2.5)))/10**((spec2.m_Gn/-2.5)))
+SCG2=((10**((spec2.m_scoto/-2.5)))/10**((spec2.m_Gn/-2.5)))
+VlVIIRS2=((10**((spec2.m_photo/-2.5)))/10**((spec2.m_VIIRS/-2.5)))
+SQM_G2=((10**((spec2.m_SQM/-2.5)))/10**((spec2.m_Gn/-2.5)))
+SQM_Vj2=spec2.m_SQM-spec2.m_Vj
+SQMVl2=((10**((spec2.m_SQM/-2.5)))/10**((spec2.m_photo/-2.5)))
+SQMSC2=((10**((spec2.m_SQM/-2.5)))/10**((spec2.m_scoto/-2.5)))
+SQM_Vl2=spec2.m_SQM-spec2.m_photo
+SQM_SC2=spec2.m_SQM-spec2.m_scoto
+SQM_VjA2=spec2.m_SQMA-spec2.m_VjA
+SQM_VlA2=spec2.m_SQMA-spec2.m_photoA
+SQM_SCA2=spec2.m_SQMA-spec2.m_scotoA
+SQM_SQMA2=spec2.m_SQMA-spec2.m_SQM
+
 
 color1=[]
 markers=mlines.Line2D.filled_markers
+markers=['o','v','^','<','>','1','*','h']
 markers1=[]
+
+SQM_SC_r=[]
+SQM_Vl_r=[]
+SQM_Vj_r=[]
+SQM_SQMA_r=[]
+B_V_r=[]
+wave_r=[]
+SQM_SCA_r=[]
+SQM_VlA_r=[]
+SQM_VjA_r=[]
+SQM_SQMA_r=[]
+B_VA_r=[]
+SQM_SC_y=[]
+SQM_Vl_y=[]
+SQM_Vj_y=[]
+SQM_SQMA_y=[]
+B_V_y=[]
+wave_y=[]
+SQM_SCA_y=[]
+SQM_VlA_y=[]
+SQM_VjA_y=[]
+SQM_SQMA_y=[]
+B_VA_y=[]
+SQM_SC_g=[]
+SQM_Vl_g=[]
+SQM_Vj_g=[]
+SQM_SQMA_g=[]
+B_V_g=[]
+wave_g=[]
+SQM_SCA_g=[]
+SQM_VlA_g=[]
+SQM_VjA_g=[]
+SQM_SQMA_g=[]
+B_VA_g=[]
+SQM_SC_b=[]
+SQM_Vl_b=[]
+SQM_Vj_b=[]
+SQM_SQMA_b=[]
+B_V_b=[]
+wave_b=[]
+SQM_SCA_b=[]
+SQM_VlA_b=[]
+SQM_VjA_b=[]
+SQM_SQMA_b=[]
+B_VA_b=[]
+SQM_SC_m=[]
+SQM_Vl_m=[]
+SQM_Vj_m=[]
+SQM_SQMA_m=[]
+B_V_m=[]
+wave_m=[]
+SQM_SCA_m=[]
+SQM_VlA_m=[]
+SQM_VjA_m=[]
+SQM_SQMA_m=[]
+B_VA_m=[]
+SQM_SC_w=[]
+SQM_Vl_w=[]
+SQM_Vj_w=[]
+SQM_SQMA_w=[]
+B_V_w=[]
+wave_w=[]
+SQM_SCA_w=[]
+SQM_VlA_w=[]
+SQM_VjA_w=[]
+SQM_SQMA_w=[]
+B_VA_w=[]
+
 for X in range(len(spec)):
     if BG[X]<0.05 and GR[X]<0.45:
         color1.append('r')
         markers1.append(markers[0])
-    if BG[X]>0.05 and GR[X]<0.45:
+        SQM_SC_r.append(SQM_SC[X])
+        SQM_Vl_r.append(SQM_Vl[X])
+        SQM_Vj_r.append(SQM_Vj[X])
+        B_V_r.append(spec.Bj_Vj[X])
+        SQM_SCA_r.append(SQM_SCA[X])
+        SQM_VlA_r.append(SQM_VlA[X])
+        SQM_VjA_r.append(SQM_VjA[X])
+        SQM_SQMA_r.append(SQM_SQMA[X])
+        B_VA_r.append(spec.Bj_VjA[X])
+        wave_r.append(spec.wave[X])
+    elif BG[X]>0.05 and GR[X]<0.45 and BG[X]<0.25:
         color1.append('k')
-        markers1.append(markers[1])        
-    if BG[X]<0.34 and GR[X]>0.45 and GR[X]<0.55:
+        markers1.append(markers[1])
+        SQM_SC_y.append(SQM_SC[X])
+        SQM_Vl_y.append(SQM_Vl[X])
+        SQM_Vj_y.append(SQM_Vj[X])
+        B_V_y.append(spec.Bj_Vj[X])
+        SQM_SCA_y.append(SQM_SCA[X])
+        SQM_VlA_y.append(SQM_VlA[X])
+        SQM_VjA_y.append(SQM_VjA[X])
+        SQM_SQMA_y.append(SQM_SQMA[X])
+        B_VA_y.append(spec.Bj_VjA[X])
+        wave_y.append(spec.wave[X])
+        
+    elif BG[X]>0.25 and GR[X]<0.56:
+        color1.append('w')
+        markers1.append(markers[6])
+        SQM_SC_w.append(SQM_SC[X])
+        SQM_Vl_w.append(SQM_Vl[X])
+        SQM_Vj_w.append(SQM_Vj[X])
+        B_V_w.append(spec.Bj_Vj[X])
+        SQM_SCA_w.append(SQM_SCA[X])
+        SQM_VlA_w.append(SQM_VlA[X])
+        SQM_VjA_w.append(SQM_VjA[X])
+        SQM_SQMA_w.append(SQM_SQMA[X])
+        B_VA_w.append(spec.Bj_VjA[X])
+        wave_w.append(spec.wave[X])                     
+    elif BG[X]<0.25 and GR[X]>0.45 and GR[X]<0.55:
         color1.append('y')
         markers1.append(markers[2])
-    if BG[X]<0.34 and GR[X]>0.55:
+        SQM_SC_y.append(SQM_SC[X])
+        SQM_Vl_y.append(SQM_Vl[X])
+        SQM_Vj_y.append(SQM_Vj[X])
+        B_V_y.append(spec.Bj_Vj[X])
+        SQM_SCA_y.append(SQM_SCA[X])
+        SQM_VlA_y.append(SQM_VlA[X])
+        SQM_VjA_y.append(SQM_VjA[X])
+        SQM_SQMA_y.append(SQM_SQMA[X])
+        B_VA_y.append(spec.Bj_VjA[X])    
+        wave_y.append(spec.wave[X])
+    elif BG[X]>0.46 and GR[X]>0 and GR[X]<0.55:
+        color1.append('c')
+        markers1.append(markers[6])
+        SQM_SC_w.append(SQM_SC[X])
+        SQM_Vl_w.append(SQM_Vl[X])
+        SQM_Vj_w.append(SQM_Vj[X])
+        B_V_w.append(spec.Bj_Vj[X])
+        SQM_SQMA_w.append(SQM_SQMA[X])
+        SQM_SCA_w.append(SQM_SCA[X])
+        SQM_VlA_w.append(SQM_VlA[X])
+        SQM_VjA_w.append(SQM_VjA[X])
+        B_VA_w.append(spec.Bj_VjA[X])
+        wave_w.append(spec.wave[X])  
+    elif BG[X]<0.34 and GR[X]>0.55:
         color1.append('g')
         markers1.append(markers[3])
-    if BG[X]>0.34 and GR[X]>0.55:
+        SQM_SC_g.append(SQM_SC[X])
+        SQM_Vl_g.append(SQM_Vl[X])
+        SQM_Vj_g.append(SQM_Vj[X])
+        B_V_g.append(spec.Bj_Vj[X])
+        SQM_SCA_g.append(SQM_SCA[X])
+        SQM_VlA_g.append(SQM_VlA[X])
+        SQM_VjA_g.append(SQM_VjA[X])
+        B_VA_g.append(spec.Bj_VjA[X])
+        SQM_SQMA_g.append(SQM_SQMA[X])
+        wave_g.append(spec.wave[X])    
+    elif BG[X]>0.34 and GR[X]>0.55:
         color1.append('b')
         markers1.append(markers[4])
+        SQM_SC_b.append(SQM_SC[X])
+        SQM_Vl_b.append(SQM_Vl[X])
+        SQM_Vj_b.append(SQM_Vj[X])
+        B_V_b.append(spec.Bj_Vj[X])
+        SQM_SCA_b.append(SQM_SCA[X])
+        SQM_VlA_b.append(SQM_VlA[X])
+        SQM_VjA_b.append(SQM_VjA[X])
+        B_VA_b.append(spec.Bj_VjA[X])
+        SQM_SQMA_b.append(SQM_SQMA[X])
+        wave_b.append(spec.wave[X])
+    elif BG[X]<0.34 and GR[X]>0.2 and GR[X]<0.46:
+        color1.append('m')
+        markers1.append(markers[5])
+        SQM_SC_m.append(SQM_SC[X])
+        SQM_Vl_m.append(SQM_Vl[X])
+        SQM_Vj_m.append(SQM_Vj[X])
+        B_V_m.append(spec.Bj_Vj[X])
+        SQM_SCA_m.append(SQM_SCA[X])
+        SQM_VlA_m.append(SQM_VlA[X])
+        SQM_VjA_m.append(SQM_VjA[X])
+        SQM_SQMA_m.append(SQM_SQMA[X])
+        B_VA_m.append(spec.Bj_VjA[X])
+        wave_m.append(spec.wave[X])
+    else:
+       color1.append('m') 
+       markers1.append(markers[5])
+       SQM_SC_m.append(SQM_SC[X])
+       SQM_Vl_m.append(SQM_Vl[X])
+       SQM_Vj_m.append(SQM_Vj[X])
+       B_V_m.append(spec.Bj_Vj[X])
+       SQM_SCA_m.append(SQM_SCA[X])
+       SQM_VlA_m.append(SQM_VlA[X])
+       SQM_VjA_m.append(SQM_VjA[X])
+       SQM_SQMA_m.append(SQM_SQMA[X])
+       B_VA_m.append(spec.Bj_VjA[X])
+       wave_m.append(spec.wave[X])
 
+SQM_SC_t=np.array([np.mean(SQM_SC_r),np.mean(SQM_SC_y),np.mean(SQM_SC_g),np.mean(SQM_SC_b),np.mean(SQM_SC_w)])#,np.mean(SQM_SC_m)])
+SQM_Vl_t=np.array([np.mean(SQM_Vl_r),np.mean(SQM_Vl_y),np.mean(SQM_Vl_g),np.mean(SQM_Vl_b),np.mean(SQM_Vl_w)])#,np.mean(SQM_Vl_m)])
+SQM_Vj_t=np.array([np.mean(SQM_Vj_r),np.mean(SQM_Vj_y),np.mean(SQM_Vj_g),np.mean(SQM_Vj_b),np.mean(SQM_Vj_w)])#,np.mean(SQM_Vj_m)])
+B_V_t=np.array([np.mean(B_V_r),np.mean(B_V_y),np.mean(B_V_g),np.mean(B_V_b),np.mean(B_V_w)])#,np.mean(B_V_m)])
+wave_t=np.array([np.median(wave_r),np.median(wave_y),np.median(wave_g),np.median(wave_b),np.median(wave_w)])#,np.mean(wave_m)])
+SQM_SCA_t=np.array([np.mean(SQM_SCA_r),np.mean(SQM_SCA_y),np.mean(SQM_SCA_g),np.mean(SQM_SCA_b),np.mean(SQM_SCA_w)])#,np.mean(SQM_SCA_m)])
+SQM_VlA_t=np.array([np.mean(SQM_VlA_r),np.mean(SQM_VlA_y),np.mean(SQM_VlA_g),np.mean(SQM_VlA_b),np.mean(SQM_VlA_w)])#,np.mean(SQM_VlA_m)])
+SQM_VjA_t=np.array([np.mean(SQM_VjA_r),np.mean(SQM_VjA_y),np.mean(SQM_VjA_g),np.mean(SQM_VjA_b),np.mean(SQM_VjA_w)])#,np.mean(SQM_VjA_m)])
+SQM_SQMA_t=np.array([np.mean(SQM_SQMA_r),np.mean(SQM_SQMA_y),np.mean(SQM_SQMA_g),np.mean(SQM_SQMA_b),np.mean(SQM_SQMA_w)])#,np.mean(SQM_SQMA_m)])
+B_VA_t=np.array([np.mean(B_VA_r),np.mean(B_VA_y),np.mean(B_VA_g),np.mean(B_VA_b),np.mean(B_VA_w)])#,np.mean(B_VA_m)])
+SQM_SC_tmax=np.array([max(SQM_SC_r),max(SQM_SC_y),max(SQM_SC_g),max(SQM_SC_b),max(SQM_SC_w)])#,max(SQM_SC_m)])
+SQM_Vl_tmax=np.array([max(SQM_Vl_r),max(SQM_Vl_y),max(SQM_Vl_g),max(SQM_Vl_b),max(SQM_Vl_w)])#,max(SQM_Vl_m)])
+SQM_Vj_tmax=np.array([max(SQM_Vj_r),max(SQM_Vj_y),max(SQM_Vj_g),max(SQM_Vj_b),max(SQM_Vj_w)])#,max(SQM_Vj_m)])
+SQM_SQMA_tmax=np.array([max(SQM_SQMA_r),max(SQM_SQMA_y),max(SQM_SQMA_g),max(SQM_SQMA_b),max(SQM_SQMA_w)])#,max(SQM_SQMA_m)])
+B_V_tmax=np.array([max(B_V_r),max(B_V_y),max(B_V_g),max(B_V_b),max(B_V_w)])#,max(B_V_m)])
+SQM_SCA_tmax=np.array([max(SQM_SCA_r),max(SQM_SCA_y),max(SQM_SCA_g),max(SQM_SCA_b),max(SQM_SCA_w)])#,max(SQM_SCA_m)])
+SQM_VlA_tmax=np.array([max(SQM_VlA_r),max(SQM_VlA_y),max(SQM_VlA_g),max(SQM_VlA_b),max(SQM_VlA_w)])#,max(SQM_VlA_m)])
+SQM_VjA_tmax=np.array([max(SQM_VjA_r),max(SQM_VjA_y),max(SQM_VjA_g),max(SQM_VjA_b),max(SQM_VjA_w)])#,max(SQM_VjA_m)])
+B_VA_tmax=np.array([max(B_VA_r),max(B_VA_y),max(B_VA_g),max(B_VA_b),max(B_VA_w)])#,max(B_VA_m)])
+SQM_SC_tmin=np.array([min(SQM_SC_r),min(SQM_SC_y),min(SQM_SC_g),min(SQM_SC_b),min(SQM_SC_w)])#,min(SQM_SC_m)])
+SQM_Vl_tmin=np.array([min(SQM_Vl_r),min(SQM_Vl_y),min(SQM_Vl_g),min(SQM_Vl_b),min(SQM_Vl_w)])#,min(SQM_Vl_m)])
+SQM_Vj_tmin=np.array([min(SQM_Vj_r),min(SQM_Vj_y),min(SQM_Vj_g),min(SQM_Vj_b),min(SQM_Vj_w)])#,min(SQM_Vj_m)])
+B_V_tmin=np.array([min(B_V_r),min(B_V_y),min(B_V_g),min(B_V_b),min(B_V_w)])#,min(B_V_m)])
+SQM_SCA_tmin=np.array([min(SQM_SCA_r),min(SQM_SCA_y),min(SQM_SCA_g),min(SQM_SCA_b),min(SQM_SCA_w)])#,min(SQM_SCA_m)])
+SQM_VlA_tmin=np.array([min(SQM_VlA_r),min(SQM_VlA_y),min(SQM_VlA_g),min(SQM_VlA_b),min(SQM_VlA_w)])#,min(SQM_VlA_m)])
+SQM_VjA_tmin=np.array([min(SQM_VjA_r),min(SQM_VjA_y),min(SQM_VjA_g),min(SQM_VjA_b),min(SQM_VjA_w)])#,min(SQM_VjA_m)])
+SQM_SQMA_tmin=np.array([min(SQM_SQMA_r),min(SQM_SQMA_y),min(SQM_SQMA_g),min(SQM_SQMA_b),min(SQM_SQMA_w)])#,min(SQM_SQMA_m)])
+B_VA_tmin=np.array([min(B_VA_r),min(B_V_y),min(B_VA_g),min(B_VA_b),min(B_VA_w)])#,min(B_VA_m)])
+wave_tmin=np.array([min(wave_r),min(wave_y),min(wave_g),min(wave_b),min(wave_w)])#,min(wave_m)])
+wave_tmax=np.array([max(wave_r),max(wave_y),max(wave_g),max(wave_b),max(wave_w)])#,min(wave_m)])
+SQM_SC_tmax=SQM_SC_tmax-SQM_SC_t
+SQM_Vl_tmax=SQM_Vl_tmax-SQM_Vl_t
+SQM_Vj_tmax=SQM_Vj_tmax-SQM_Vj_t
+SQM_SQMA_tmax=SQM_SQMA_tmax-SQM_SQMA_t
+B_V_tmax=B_V_tmax-B_V_t
+SQM_SCA_tmax=SQM_SCA_tmax-SQM_SCA_t
+SQM_VlA_tmax=SQM_VlA_tmax-SQM_VlA_t
+SQM_VjA_tmax=SQM_VjA_tmax-SQM_VjA_t
+B_VA_tmax=B_VA_tmax-B_VA_t
+SQM_SC_tmin=SQM_SC_t-SQM_SC_tmin
+SQM_Vl_tmin=SQM_Vl_t-SQM_Vl_tmin
+SQM_Vj_tmin=SQM_Vj_t-SQM_Vj_tmin
+SQM_SQMA_tmin=SQM_SQMA_t-SQM_SQMA_tmin
+B_V_tmin=B_V_t-B_V_tmin
+SQM_SCA_tmin=SQM_SCA_t-SQM_SCA_tmin
+SQM_VlA_tmin=SQM_VlA_t-SQM_VlA_tmin
+SQM_VjA_tmin=SQM_VjA_t-SQM_VjA_tmin
+B_VA_tmin=B_VA_t-B_VA_tmin
 
 patches = []
 fig, ax = plt.subplots()
 #ax.plot(BG,GR,c=color1,marker=markers1)
-plt.scatter(BG,GR,s=30, c=color1, alpha=0.9)
+#plt.scatter(BG,GR,s=30, c=color1,marker=markers1, alpha=0.9)
+
+d = {'x': BG, 'y': GR, 'color': color1}
+df = pd.DataFrame(d)
+mm = df.groupby('color')
+cat = ['r', 'w','b','y','k']
+char = ['*', 'o','>','<','v']
 #ax.scatter(BG,GR, c=c, cmap=cmap)
-if 1:
+scatter2(cat,char,mm)
+if 0:
  for X in range(len(listafiles)):
    try:
     plt.text(BG[X],GR[X]+0.01,str(spec[X].num),ha='right', va='bottom')
@@ -508,19 +839,21 @@ if 1:
 plt.xlabel("B/G")
 plt.ylabel("G/R")
 plt.title("ISS colors for typical lamps")
-plt.xlim(0,0.9)
-plt.ylim(0,2.1)
-rect = mpatches.Rectangle([0., 0.55], 0.34, 5, ec="none")
+plt.xlim(0,1.1)
+plt.ylim(0,1.1)
+rect = mpatches.Rectangle([0., 0.56], 0.34, 5, ec="none")
 patches.append(rect)
-rect = mpatches.Rectangle([0.34, 0.55], 5, 5, ec="none")
+rect = mpatches.Rectangle([0.34, 0.56], 5, 5, ec="none")
 patches.append(rect)
-rect = mpatches.Rectangle([0, 0.45], 0.34,0.1 , ec="none")
+rect = mpatches.Rectangle([0, 0.45], 0.25,0.1 , ec="none")
 patches.append(rect)
 rect = mpatches.Rectangle([0.00, 0.], 0.05,0.45 , ec="none")
 patches.append(rect)
-rect = mpatches.Rectangle([0.05, 0.00], 0.29,0.45 , ec="none")
+rect = mpatches.Rectangle([0.05, 0.00], 0.20,0.45 , ec="none")
 patches.append(rect)
-rect = mpatches.Rectangle([0.34, 0.00], 5,0.55 , ec="none")
+rect = mpatches.Rectangle([0.25, 0.00], 0.26,0.56 , ec="none")
+patches.append(rect)
+rect = mpatches.Rectangle([0.46, 0.00], 5,0.56 , ec="none")
 patches.append(rect)
 colors = np.linspace(0, 1, len(patches))
 collection = PatchCollection(patches, cmap=plt.cm.hsv, alpha=0.1)
@@ -531,6 +864,8 @@ plt.show()
 
 
 
+asciitable.write(spec,'espectros.txt')
+asciitable.write(spec2,'espectros2.txt')
 
 
 
@@ -542,7 +877,7 @@ xp = np.linspace(0, 1, 100)
 plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
 plt.plot(xp, p(xp),'r-')
 plt.scatter(BG,VlG,s=30, c=color1, alpha=0.9)
-if 1:
+if 0:
  for X in range(len(listafiles)):
    try:
     plt.text(BG[X],VlG[X]+0.01,str(spec[X].num),ha='right', va='bottom')
@@ -563,7 +898,7 @@ xp = np.linspace(0, 2, 100)
 plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
 plt.scatter(GR,SCG,s=30, c=color1, alpha=0.9)
 plt.plot(xp, p(xp),'r-')
-if 1:
+if 0:
  for X in range(len(listafiles)):
    try:
     plt.text(GR[X],SCG[X]+0.01,str(spec[X].num),ha='right', va='bottom')
@@ -586,7 +921,7 @@ xp = np.linspace(0, 2, 100)
 plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
 plt.scatter(GR,VlG,s=30, c=color1, alpha=0.9)
 plt.plot(xp, p(xp),'r-')
-if 1:
+if 0:
  for X in range(len(listafiles)):
    try:
     plt.text(GR[X],VlG[X]+0.01,str(spec[X].num),ha='right', va='bottom')
@@ -609,7 +944,7 @@ xp = np.linspace(0, 2, 100)
 plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
 plt.scatter(GR,SQM_G,s=30, c=color1, alpha=0.9)
 plt.plot(xp, p(xp),'r-')
-if 1:
+if 0:
  for X in range(len(listafiles)):
    try:
     plt.text(GR[X],SQM_G[X]+0.01,str(spec[X].num),ha='right', va='bottom')
@@ -632,7 +967,7 @@ xp = np.linspace(0, 2, 100)
 plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
 plt.scatter(BG,SQM_G,s=30, c=color1, alpha=0.9)
 plt.plot(xp, p(xp),'r-')
-if 1:
+if 0:
  for X in range(len(listafiles)):
    try:
     plt.text(BG[X],SQM_G[X]+0.01,str(spec[X].num),ha='right', va='bottom')
@@ -648,14 +983,14 @@ plt.title("ISS colors for typical lamps")
 plt.savefig('colores_espectros_SQM_G_BG.png')
 plt.show()
 
-model_ransac_SQM_G_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQM_G)
-zSQM_GBGj = np.polyfit(spec.Bj_Vj, SQM_G, 3)
-p = np.poly1d(zSQM_GBGj)
-xp = np.linspace(0, 2, 100)
+#model_ransac_SQM_G_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQM_G)
+#zSQM_GBGj = np.polyfit(spec.Bj_Vj, SQM_G, 3)
+#p = np.poly1d(zSQM_GBGj)
+#xp = np.linspace(0, 2, 100)
 plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
 plt.scatter(spec.Bj_Vj,SQM_G,s=30, c=color1, alpha=0.9)
 plt.plot(xp, p(xp),'r-')
-if 1:
+if 0:
  for X in range(len(listafiles)):
    try:
     plt.text(spec.Bj_Vj[X],SQM_G[X]+0.01,str(spec[X].num),ha='right', va='bottom')
@@ -671,516 +1006,1085 @@ plt.title("ISS colors for typical lamps")
 plt.savefig('colores_espectros_SQM_G_BGj.png')
 plt.show()
 
-model_ransac_SQM_Vj_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQM_Vj)
-zSQM_VjBGj = np.polyfit(spec.Bj_Vj, SQM_Vj, 3)
-p = np.poly1d(zSQM_VjBGj)
-xp = np.linspace(0, 2, 100)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-plt.scatter(spec.Bj_Vj,SQM_Vj,s=30, c=color1, alpha=0.9)
-plt.plot(xp, p(xp),'r-')
-if 1:
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+#model_ransac_SQM_Vj_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQM_Vj)
+#zSQM_VjBGj = np.polyfit(spec.Bj_Vj, SQM_Vj, 3)
+#p = np.poly1d(zSQM_VjBGj)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+ax1.scatter(spec.Bj_Vj,SQM_Vj,s=30, c=color1, alpha=0.9)
+ax1.errorbar(B_V_t, SQM_Vj_t,ecolor='k',capthick=2, yerr=[SQM_Vj_tmin, SQM_Vj_tmax], xerr=[B_V_tmin, B_V_tmax], fmt='.')
+ax1.scatter(B_V_t, SQM_Vj_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
  for X in range(len(listafiles)):
    try:
-    plt.text(spec.Bj_Vj[X],SQM_Vj[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+    ax1.text(spec.Bj_Vj[X],SQM_Vj[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+ax1.set_xlabel("Bj - Vj")
+ax1.set_ylabel("SQM - Vj")
+ax1.set_xlim(0,8)
+ax1.set_ylim(0.2,1)
+ax1.set_title("SQM - V vs B-V Johnson color")
+
+ax2.set_ylim(0.2-0.35,1-0.35)
+ax2.set_ylabel("SQM* - Vj")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+fig.savefig('colores_espectros_SQM_Vj_BGj.png')
+plt.show()
+
+########################################
+#With clouds SQM -V vs B-V
+########################################
+
+#model_ransac_SQM_VjA_BGAj,line_y_ransac,line_X=ransacfit(spec.Bj_VjA,SQM_VjA)
+#zSQM_VjABGjA = np.polyfit(spec.Bj_VjA, SQM_VjA, 3)
+#p = np.poly1d(zSQM_VjABGjA)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_VjA,SQM_VjA,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_VA_t, SQM_VjA_t,ecolor='k',capthick=2, yerr=[SQM_VjA_tmin, SQM_VjA_tmax], xerr=[B_VA_tmin, B_VA_tmax], fmt='.')
+plt.scatter(B_VA_t, SQM_VjA_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_VjA[X],SQM_VjA[X]+0.01,str(spec[X].num),ha='right', va='bottom')
    except:
     print "fallo"
 plt.xlabel("Bj - Vj")
-plt.ylabel("SQM-Vj")
+plt.ylabel("SQM - Vj")
+plt.xlim(0,8)
+plt.ylim(0.2,1)
+plt.title("SQM - V vs B-V Johnson color Cloud amplified")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_Vj_BGjA_'+clouds[:-4]+'.png')
+plt.show()
+
+
+########################################
+
+########################################
+#model_ransac_SQMVl_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQMVl)
+#zSQMVlBGj = np.polyfit(spec.Bj_Vj, SQMVl, 3)
+#p = np.poly1d(zSQMVlBGj)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_Vj,SQMVl,s=30, c=color1, alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_Vj[X],SQMVl[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM/Vl")
 plt.xlim(0,8)
 #plt.ylim(0.5,1.3)
-plt.title("ISS colors for typical lamps")
+plt.title("SQM/Photopic vs B-V Johnson")
 #plt.xlim(0,0.9)
 #plt.ylim(0,2.1)
-plt.savefig('colores_espectros_SQM_Vj_BGj.png')
+plt.savefig('colores_espectros_SQMVl_BGj.png')
 plt.show()
 
-model_ransac_Ha_GR,line_y_ransac,line_X=ransacfit(GR,Ha_G)
-zHa_GGR = np.polyfit(GR, Ha_G, 3)
-p = np.poly1d(zHa_GGR)
-xp = np.linspace(0, 2, 100)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-plt.scatter(GR,Ha_G,s=30, c=color1, alpha=0.9)
-plt.plot(xp, p(xp),'r-')
-if 1:
+
+###########################################
+
+###########################################
+
+#model_ransac_SQMSC_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQMSC)
+#zSQMSCBGj = np.polyfit(spec.Bj_Vj, SQMSC, 3)
+#p = np.poly1d(zSQMSCBGj)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_Vj,SQMSC,s=30, c=color1, alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
  for X in range(len(listafiles)):
    try:
-    plt.text(GR[X],Ha_G[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+    plt.text(spec.Bj_Vj[X],SQMSC[X]+0.01,str(spec[X].num),ha='right', va='bottom')
    except:
     print "fallo"
-plt.xlabel("G/R")
-plt.ylabel("Ha/G")
-plt.xlim(0,1.6)
-plt.ylim(0.,2)
-plt.title("ISS colors for typical lamps")
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM/SC")
+plt.xlim(0,8)
+#plt.ylim(0.5,1.3)
+plt.title("SQM/Scotopic vs B-V Johnson color")
 #plt.xlim(0,0.9)
 #plt.ylim(0,2.1)
-plt.savefig('colores_espectros_Ha_G_GR.png')
+plt.savefig('colores_espectros_SQMSC_BGj.png')
 plt.show()
 
-model_ransac_Hb_GR,line_y_ransac,line_X=ransacfit(GR,Hb_G)
-zHb_GGR = np.polyfit(GR, Hb_G, 3)
-p = np.poly1d(zHb_GGR)
-xp = np.linspace(0, 2, 100)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-plt.scatter(GR,Hb_G,s=30, c=color1, alpha=0.9)
-plt.plot(xp, p(xp),'r-')
-if 1:
+
+###########################################
+
+###########################################
+
+########################################
+
+########################################
+#model_ransac_SQM_Vl_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQM_Vl)
+#zSQM_VlBGj = np.polyfit(spec.Bj_Vj, SQM_Vl, 3)
+#p = np.poly1d(zSQM_VlBGj)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+fig, ax1 = plt.subplots()
+ax1.scatter(spec.Bj_Vj,SQM_Vl,s=30, c=color1, alpha=0.9)
+ax1.errorbar(B_V_t, SQM_Vl_t,ecolor='k',capthick=2, yerr=[SQM_Vl_tmin, SQM_Vl_tmax], xerr=[B_V_tmin, B_V_tmax], fmt='.')
+ax1.scatter(B_V_t, SQM_Vl_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+ax2 = ax1.twinx()
+#plt.plot(xp, p(xp),'r-')
+if 0:
  for X in range(len(listafiles)):
    try:
-    plt.text(GR[X],Hb_G[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+    plt.text(spec.Bj_Vj[X],SQM_Vl[X]+0.01,str(spec[X].num),ha='right', va='bottom')
    except:
     print "fallo"
-plt.xlabel("G/R")
-plt.ylabel("Hb/G")
-plt.xlim(0,1.6)
-plt.ylim(0.,1)
-plt.title("ISS colors for typical lamps")
+ax1.set_xlabel("Bj - Vj")
+ax1.set_ylabel("SQM - V($\lambda$) Photopic vision")
+ax1.set_xlim(0,8)
+ax1.set_ylim(0.2,1)
+ax1.set_title("SQM-Photopic vs B-V Johnson color")
+ax2.set_ylim(0.2-0.35,1-0.35)
+ax2.set_ylabel("SQM* - V($\lambda$) Photopic vision")
 #plt.xlim(0,0.9)
 #plt.ylim(0,2.1)
-plt.savefig('colores_espectros_Hb_G_GR.png')
+plt.savefig('colores_espectros_SQM_Vl_BVj.png')
 plt.show()
+########################################
+#Clouds
+########################################
+#model_ransac_SQM_Vl_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_VjA,SQM_VlA)
+#zSQM_VlBGjA = np.polyfit(spec.Bj_VjA, SQM_VlA, 3)
+#p = np.poly1d(zSQM_VlBGjA)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
 
-
-model_ransac_VIIRSBG,line_y_ransac,line_X=ransacfit(BG,G_VIIRS)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-zgviirsBG = np.polyfit(BG, G_VIIRS, 2)
-p = np.poly1d(zgviirsBG)
-xp = np.linspace(0, 1, 100)
-plt.scatter(BG,G_VIIRS,s=30, c=color1, alpha=0.9)
-plt.plot(xp, p(xp),'r-')
-if 1:
+plt.scatter(spec.Bj_VjA,SQM_VlA,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_VA_t, SQM_VlA_t,ecolor='k',capthick=2, yerr=[SQM_VlA_tmin, SQM_VlA_tmax], xerr=[B_VA_tmin, B_VA_tmax], fmt='.')
+plt.scatter(B_VA_t, SQM_VlA_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
  for X in range(len(listafiles)):
    try:
-    plt.text(BG[X],G_VIIRS[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+    plt.text(spec.Bj_VjA[X],SQM_VlA[X]+0.01,str(spec[X].num),ha='right', va='bottom')
    except:
     print "fallo"
-plt.xlabel("B/G")
-plt.ylabel("G/VIIRS")
-plt.title("VIIRS correction")
-plt.xlim(0,0.9)
-plt.ylim(0,2.4)
-plt.savefig('colores_espectros_VIIRS_BG.png')
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM - V($\lambda$) Photopic vision")
+plt.xlim(0,8)
+plt.ylim(0.2,1)
+plt.title("SQM-Photopic vs B-V Johnson cloud amplified")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_Vl_BVjA.png')
 plt.show()
 
-model_ransac_VIIRSGR,line_y_ransac,line_X=ransacfit(GR,G_VIIRS)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-zgviirsGR = np.polyfit(GR, G_VIIRS, 2)
-p = np.poly1d(zgviirsGR)
-xp = np.linspace(0, 1, 100)
-plt.scatter(GR,G_VIIRS,s=30, c=color1, alpha=0.9)
-plt.plot(xp, p(xp),'r-')
-if 1:
+###########################################
+
+###########################################
+if 0:
+    model_ransac_SQM_SC_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQM_SC)
+    zSQM_SCBGj = np.polyfit(spec.Bj_Vj, SQM_SC, 3)
+    p = np.poly1d(zSQM_SCBGj)
+    xp = np.linspace(0, 2, 100)
+    #plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_Vj,SQM_SC,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_V_t, SQM_SC_t,ecolor='k',capthick=2, yerr=[SQM_SC_tmin, SQM_SC_tmax], xerr=[B_V_tmin, B_V_tmax], fmt='.')
+plt.scatter(B_V_t, SQM_SC_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
  for X in range(len(listafiles)):
    try:
-    plt.text(GR[X],G_VIIRS[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+    plt.text(spec.Bj_Vj[X],SQM_SC[X]+0.01,str(spec[X].num),ha='right', va='bottom')
    except:
     print "fallo"
-plt.xlabel("G/R")
-plt.ylabel("G/VIIRS")
-plt.title("VIIRS correction")
-plt.xlim(0,1.8)
-plt.ylim(0,2.4)
-plt.savefig('colores_espectros_VIIRS_GR.png')
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM - V'($\lambda$) Soctopic vision")
+plt.xlim(0,8)
+plt.ylim(-1.2,0.4)
+plt.title("SQM-Scotopic vs B-V Johnson color")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_SC_BGj.png')
 plt.show()
 
-
-model_ransac_VlVIIRSGR,line_y_ransac,line_X=ransacfit(GR,VlVIIRS)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-zgVlVIIRSGR = np.polyfit(GR, VlVIIRS, 2)
-p = np.poly1d(zgVlVIIRSGR)
-xp = np.linspace(0, 2, 100)
-plt.scatter(GR,VlVIIRS,s=30, c=color1, alpha=0.9)
-plt.plot(xp, p(xp),'r-')
-if 1:
+###########################################
+# Clouds
+###########################################
+if 0:
+    model_ransac_SQM_SC_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_VjA,SQM_SCA)
+    zSQM_SCBGjA = np.polyfit(spec.Bj_VjA, SQM_SCA, 3)
+    p = np.poly1d(zSQM_SCBGjA)
+    xp = np.linspace(0, 2, 100)
+    #plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_VjA,SQM_SCA,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_VA_t, SQM_SCA_t,ecolor='k',capthick=2, yerr=[SQM_SCA_tmin, SQM_SCA_tmax], xerr=[B_VA_tmin, B_VA_tmax], fmt='.')
+plt.scatter(B_VA_t, SQM_SCA_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
  for X in range(len(listafiles)):
    try:
-    plt.text(GR[X],VlVIIRS[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+    plt.text(spec.Bj_Vj[X],SQM_SC[X]+0.01,str(spec[X].num),ha='right', va='bottom')
    except:
     print "fallo"
-plt.xlabel("G/R")
-plt.ylabel("Vl/VIIRS")
-plt.title("VIIRS correction")
-plt.xlim(0,1.8)
-plt.ylim(0,2.4)
-plt.savefig('colores_espectros_VlVIIRSGR.png')
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM - V'($\lambda$) Soctopic vision")
+plt.xlim(0,8)
+plt.ylim(-1.2,0.4)
+plt.title("SQM-Scotopic vs B-V Johnson cloud amplified")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_SC_BGjA.png')
 plt.show()
+###########################################
+# Clouds
+###########################################
+if 0:
+    model_ransac_SQM_SQMA_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_VjA,SQM_SQMA)
+    zSQM_SQMABGj = np.polyfit(spec.Bj_Vj, SQM_SQMA, 3)
+    p = np.poly1d(zSQM_SQMABGj)
+    xp = np.linspace(0, 2, 100)
+    #plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_Vj,SQM_SQMA,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_V_t, SQM_SQMA_t,ecolor='k',capthick=2, yerr=[SQM_SQMA_tmin, SQM_SQMA_tmax], xerr=[B_V_tmin, B_V_tmax], fmt='.')
+plt.scatter(B_V_t, SQM_SQMA_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_Vj[X],SQM_SQMA[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM' - SQM")
+plt.xlim(0,8)
+#plt.ylim(-1.2,0.4)
+plt.title("SQM - SQM & clouds* vs B-V Johnson")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_SQMA_BGjA'+clouds[:-4]+'.png')
+plt.show()
+
+###########################################
+# Clouds wave
+###########################################
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+if 0:
+    model_ransac_SQM_SQMA_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_VjA,SQM_SQMA)
+    zSQM_SQMABGj = np.polyfit(spec.Bj_Vj, SQM_SQMA, 3)
+    p = np.poly1d(zSQM_SQMABGj)
+    xp = np.linspace(0, 2, 100)
+    #plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+ax1.scatter(spec.wave,SQM_SQMA,s=30, c=color1, alpha=0.9)
+#plt.errorbar(wave_t, SQM_SQMA_t,ecolor='k',capthick=2, yerr=[SQM_SQMA_tmin, SQM_SQMA_tmax], xerr=[wave_tmin, wave_tmax], fmt='.')
+ax1.scatter(wave_t, SQM_SQMA_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_Vj[X],SQM_SQMA[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+ax1.set_xlabel("Average wavelenght")
+ax1.set_ylabel("SQM' - SQM")
+ax2.set_ylabel("Amplification")
+ax1.set_xlim(4000,8000)
+ax2.set_xlim(4000,8000)
+#plt.ylim(-1.2,0.4)
+plt.title("SQM - SQM & clouds* vs Avg wavelenght")
+specamply=asciitable.read(clouds)
+if 0:
+    specamply.col1*SQM_LICA
+    amp = InterpolatedUnivariateSpline(specamply.col1, specamply.col2, k=3)
+    SQM_f = InterpolatedUnivariateSpline(SQM_LICA.col1, SQM_LICA.col2, k=3)
+    ampf=amp(spectro.col2)
+    SQMff=SQM_f(spectro.col2)
+    SQMampf=SQMff*ampf
+    AB_r =  InterpolatedUnivariateSpline(AB.wave, AB.flux, k=3)
+    ABf=AB_r(spectro.col2)
+ax2.plot(specamply.col1,specamply.col2)
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_SQMA_wave'+clouds[:-4]+'.png')
+plt.show()
+
+
+
+
+###################################################
+####################################################
+#######################################################3
+#####################################################
+
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+#model_ransac_SQM_Vj_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQM_Vj)
+#zSQM_VjBGj = np.polyfit(spec.Bj_Vj, SQM_Vj, 3)
+#p = np.poly1d(zSQM_VjBGj)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+ax1.scatter(spec2.Bj_Vj,SQM_Vj2,s=30, c=color1, alpha=0.9)
+#ax1.errorbar(B_V_t, SQM_Vj_t,ecolor='k',capthick=2, yerr=[SQM_Vj_tmin, SQM_Vj_tmax], xerr=[B_V_tmin, B_V_tmax], fmt='.')
+#ax1.scatter(B_V_t, SQM_Vj_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles2)):
+   try:
+    ax1.text(spec2.Bj_Vj2[X],SQM_Vj2[X]+0.01,str(spec2[X].num),ha='right', va='bottom')
+   except:
+    print "fallo2"
+ax1.set_xlabel("Bj - Vj")
+ax1.set_ylabel("SQM - Vj")
+ax1.set_xlim(0,8)
+ax1.set_ylim(-0.2,1)
+ax1.set_title("SQM - V vs B-V Johnson color")
+
+#ax2.set_ylim(0.2-0.35,1-0.35)
+#ax2.set_ylabel("SQM* - Vj")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+fig.savefig('colores_espectros_SQM_Vj_BGj2.png')
+plt.show()
+
+########################################
+#With clouds SQM -V vs B-V
+########################################
+
+#model_ransac_SQM_VjA_BGAj,line_y_ransac,line_X=ransacfit(spec.Bj_VjA,SQM_VjA)
+#zSQM_VjABGjA = np.polyfit(spec.Bj_VjA, SQM_VjA, 3)
+#p = np.poly1d(zSQM_VjABGjA)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_VjA,SQM_VjA,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_VA_t, SQM_VjA_t,ecolor='k',capthick=2, yerr=[SQM_VjA_tmin, SQM_VjA_tmax], xerr=[B_VA_tmin, B_VA_tmax], fmt='.')
+plt.scatter(B_VA_t, SQM_VjA_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_VjA[X],SQM_VjA[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM - Vj")
+plt.xlim(0,8)
+plt.ylim(0.2,1)
+plt.title("SQM - V vs B-V Johnson color Cloud amplified")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_Vj_BGjA.png')
+plt.show()
+
+
+########################################
+
+########################################
+#model_ransac_SQMVl_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQMVl)
+#zSQMVlBGj = np.polyfit(spec.Bj_Vj, SQMVl, 3)
+#p = np.poly1d(zSQMVlBGj)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_Vj,SQMVl,s=30, c=color1, alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_Vj[X],SQMVl[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM/Vl")
+plt.xlim(0,8)
+#plt.ylim(0.5,1.3)
+plt.title("SQM/Photopic vs B-V Johnson")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQMVl_BGj.png')
+plt.show()
+
+
+###########################################
+
+###########################################
+
+#model_ransac_SQMSC_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQMSC)
+#zSQMSCBGj = np.polyfit(spec.Bj_Vj, SQMSC, 3)
+#p = np.poly1d(zSQMSCBGj)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_Vj,SQMSC,s=30, c=color1, alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_Vj[X],SQMSC[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM/SC")
+plt.xlim(0,8)
+#plt.ylim(0.5,1.3)
+plt.title("SQM/Scotopic vs B-V Johnson color")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQMSC_BGj.png')
+plt.show()
+
+
+###########################################
+
+###########################################
+
+########################################
+
+########################################
+#model_ransac_SQM_Vl_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQM_Vl)
+#zSQM_VlBGj = np.polyfit(spec.Bj_Vj, SQM_Vl, 3)
+#p = np.poly1d(zSQM_VlBGj)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+fig, ax1 = plt.subplots()
+ax1.scatter(spec.Bj_Vj,SQM_Vl,s=30, c=color1, alpha=0.9)
+ax1.errorbar(B_V_t, SQM_Vl_t,ecolor='k',capthick=2, yerr=[SQM_Vl_tmin, SQM_Vl_tmax], xerr=[B_V_tmin, B_V_tmax], fmt='.')
+ax1.scatter(B_V_t, SQM_Vl_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+ax2 = ax1.twinx()
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_Vj[X],SQM_Vl[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+ax1.set_xlabel("Bj - Vj")
+ax1.set_ylabel("SQM - V($\lambda$) Photopic vision")
+ax1.set_xlim(0,8)
+ax1.set_ylim(0.2,1)
+ax1.set_title("SQM-Photopic vs B-V Johnson color")
+ax2.set_ylim(0.2-0.35,1-0.35)
+ax2.set_ylabel("SQM* - V($\lambda$) Photopic vision")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_Vl_BVj.png')
+plt.show()
+########################################
+#Clouds
+########################################
+#model_ransac_SQM_Vl_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_VjA,SQM_VlA)
+#zSQM_VlBGjA = np.polyfit(spec.Bj_VjA, SQM_VlA, 3)
+#p = np.poly1d(zSQM_VlBGjA)
+#xp = np.linspace(0, 2, 100)
+#plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+
+plt.scatter(spec.Bj_VjA,SQM_VlA,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_VA_t, SQM_VlA_t,ecolor='k',capthick=2, yerr=[SQM_VlA_tmin, SQM_VlA_tmax], xerr=[B_VA_tmin, B_VA_tmax], fmt='.')
+plt.scatter(B_VA_t, SQM_VlA_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_VjA[X],SQM_VlA[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM - V($\lambda$) Photopic vision")
+plt.xlim(0,8)
+plt.ylim(0.2,1)
+plt.title("SQM-Photopic vs B-V Johnson cloud amplified")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_Vl_BVjA.png')
+plt.show()
+
+###########################################
+
+###########################################
+if 0:
+    model_ransac_SQM_SC_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_Vj,SQM_SC)
+    zSQM_SCBGj = np.polyfit(spec.Bj_Vj, SQM_SC, 3)
+    p = np.poly1d(zSQM_SCBGj)
+    xp = np.linspace(0, 2, 100)
+    #plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_Vj,SQM_SC,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_V_t, SQM_SC_t,ecolor='k',capthick=2, yerr=[SQM_SC_tmin, SQM_SC_tmax], xerr=[B_V_tmin, B_V_tmax], fmt='.')
+plt.scatter(B_V_t, SQM_SC_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_Vj[X],SQM_SC[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM - V'($\lambda$) Soctopic vision")
+plt.xlim(0,8)
+plt.ylim(-1.2,0.4)
+plt.title("SQM-Scotopic vs B-V Johnson color")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_SC_BGj.png')
+plt.show()
+
+###########################################
+# Clouds
+###########################################
+if 0:
+    model_ransac_SQM_SC_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_VjA,SQM_SCA)
+    zSQM_SCBGjA = np.polyfit(spec.Bj_VjA, SQM_SCA, 3)
+    p = np.poly1d(zSQM_SCBGjA)
+    xp = np.linspace(0, 2, 100)
+    #plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_VjA,SQM_SCA,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_VA_t, SQM_SCA_t,ecolor='k',capthick=2, yerr=[SQM_SCA_tmin, SQM_SCA_tmax], xerr=[B_VA_tmin, B_VA_tmax], fmt='.')
+plt.scatter(B_VA_t, SQM_SCA_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_Vj[X],SQM_SC[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM - V'($\lambda$) Soctopic vision")
+plt.xlim(0,8)
+plt.ylim(-1.2,0.4)
+plt.title("SQM-Scotopic vs B-V Johnson cloud amplified")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_SC_BGjA.png')
+plt.show()
+###########################################
+# Clouds
+###########################################
+if 0:
+    model_ransac_SQM_SQMA_BGj,line_y_ransac,line_X=ransacfit(spec.Bj_VjA,SQM_SQMA)
+    zSQM_SQMABGj = np.polyfit(spec.Bj_Vj, SQM_SQMA, 3)
+    p = np.poly1d(zSQM_SQMABGj)
+    xp = np.linspace(0, 2, 100)
+    #plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+plt.scatter(spec.Bj_Vj,SQM_SQMA,s=30, c=color1, alpha=0.9)
+plt.errorbar(B_V_t, SQM_SQMA_t,ecolor='k',capthick=2, yerr=[SQM_SQMA_tmin, SQM_SQMA_tmax], xerr=[B_V_tmin, B_V_tmax], fmt='.')
+plt.scatter(B_V_t, SQM_SQMA_t,s=500, c=['r','y','g','b','w','m'], alpha=0.9)
+#plt.plot(xp, p(xp),'r-')
+if 0:
+ for X in range(len(listafiles)):
+   try:
+    plt.text(spec.Bj_Vj[X],SQM_SQMA[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+   except:
+    print "fallo"
+plt.xlabel("Bj - Vj")
+plt.ylabel("SQM' - SQM")
+plt.xlim(0,8)
+#plt.ylim(-1.2,0.4)
+plt.title("SQM - SQM & clouds vs B-V Johnson")
+#plt.xlim(0,0.9)
+#plt.ylim(0,2.1)
+plt.savefig('colores_espectros_SQM_SQMA_BGjA2.png')
+plt.show()
+
+
+############################################################
+###################################################3
+####################################################
+
+if 0:
+    ###########################################
+
+    ###########################################
+    if 0:
+        model_ransac_Ha_GR,line_y_ransac,line_X=ransacfit(GR,Ha_G)
+        zHa_GGR = np.polyfit(GR, Ha_G, 3)
+        p = np.poly1d(zHa_GGR)
+        xp = np.linspace(0, 2, 100)
+    plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+    plt.scatter(GR,Ha_G,s=30, c=color1, alpha=0.9)
+    plt.plot(xp, p(xp),'r-')
+    if 0:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(GR[X],Ha_G[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("G/R")
+    plt.ylabel("Ha/G")
+    plt.xlim(0,1.6)
+    plt.ylim(0.,2)
+    plt.title("ISS colors for typical lamps")
+    #plt.xlim(0,0.9)
+    #plt.ylim(0,2.1)
+    plt.savefig('colores_espectros_Ha_G_GR.png')
+    plt.show()
+    if 0:
+        model_ransac_Hb_GR,line_y_ransac,line_X=ransacfit(GR,Hb_G)
+        zHb_GGR = np.polyfit(GR, Hb_G, 3)
+        p = np.poly1d(zHb_GGR)
+        xp = np.linspace(0, 2, 100)
+        plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+    plt.scatter(GR,Hb_G,s=30, c=color1, alpha=0.9)
+    plt.plot(xp, p(xp),'r-')
+    if 0:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(GR[X],Hb_G[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("G/R")
+    plt.ylabel("Hb/G")
+    plt.xlim(0,1.6)
+    plt.ylim(0.,1)
+    plt.title("ISS colors for typical lamps")
+    #plt.xlim(0,0.9)
+    #plt.ylim(0,2.1)
+    plt.savefig('colores_espectros_Hb_G_GR.png')
+    plt.show()
+
+    if 0:
+        model_ransac_VIIRSBG,line_y_ransac,line_X=ransacfit(BG,G_VIIRS)
+        plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+        zgviirsBG = np.polyfit(BG, G_VIIRS, 2)
+        p = np.poly1d(zgviirsBG)
+        xp = np.linspace(0, 1, 100)
+    plt.scatter(BG,G_VIIRS,s=30, c=color1, alpha=0.9)
+    plt.plot(xp, p(xp),'r-')
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(BG[X],G_VIIRS[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("B/G")
+    plt.ylabel("G/VIIRS")
+    plt.title("VIIRS correction")
+    plt.xlim(0,0.9)
+    plt.ylim(0,2.4)
+    plt.savefig('colores_espectros_VIIRS_BG.png')
+    plt.show()
+
+    model_ransac_VIIRSGR,line_y_ransac,line_X=ransacfit(GR,G_VIIRS)
+    plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+    zgviirsGR = np.polyfit(GR, G_VIIRS, 2)
+    p = np.poly1d(zgviirsGR)
+    xp = np.linspace(0, 1, 100)
+    plt.scatter(GR,G_VIIRS,s=30, c=color1, alpha=0.9)
+    plt.plot(xp, p(xp),'r-')
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(GR[X],G_VIIRS[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("G/R")
+    plt.ylabel("G/VIIRS")
+    plt.title("VIIRS correction")
+    plt.xlim(0,1.8)
+    plt.ylim(0,2.4)
+    plt.savefig('colores_espectros_VIIRS_GR.png')
+    plt.show()
+
+
+    model_ransac_VlVIIRSGR,line_y_ransac,line_X=ransacfit(GR,VlVIIRS)
+    plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+    zgVlVIIRSGR = np.polyfit(GR, VlVIIRS, 2)
+    p = np.poly1d(zgVlVIIRSGR)
+    xp = np.linspace(0, 2, 100)
+    plt.scatter(GR,VlVIIRS,s=30, c=color1, alpha=0.9)
+    plt.plot(xp, p(xp),'r-')
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(GR[X],VlVIIRS[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("G/R")
+    plt.ylabel("Vl/VIIRS")
+    plt.title("VIIRS correction")
+    plt.xlim(0,1.8)
+    plt.ylim(0,2.4)
+    plt.savefig('colores_espectros_VlVIIRSGR.png')
+    plt.show()
+            
         
-    
-model_ransac_sli,line_y_ransac,line_X=ransacfit(BG,spec.i_sli)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-zslibg = np.polyfit(BG, spec.i_sli, 2)
-p = np.poly1d(zslibg)
-xp = np.linspace(0, 1, 100)
-plt.scatter(BG,spec.i_sli,s=30, c=color1, alpha=0.9)
-plt.plot(xp, p(xp),'r-')
-if 1:
- for X in range(len(listafiles)):
-   try:
-    plt.text(BG[X],spec.i_sli[X]+0.01,str(spec[X].num),ha='right', va='bottom')
-   except:
-    print "fallo"
-plt.xlabel("B/G")
-plt.ylabel("SLI")
-plt.title("SLI")
-plt.xlim(0,0.9)
-plt.ylim(0,1.2)
-plt.savefig('colores_espectros_SLI_BG.png')
-plt.show()
-
-model_ransac_sli,line_y_ransac,line_X=ransacfit(GR,spec.i_sli)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-zsligr = np.polyfit(GR, spec.i_sli, 3)
-p = np.poly1d(zsligr)
-xp = np.linspace(0, 2, 100)
-plt.scatter(GR,spec.i_sli,s=30, c=color1, alpha=0.9)
-plt.plot(xp, p(xp),'r-')
-if 1:
- for X in range(len(listafiles)):
-   try:
-    plt.text(GR[X],spec.i_sli[X]+0.01,str(spec[X].num),ha='right', va='bottom')
-   except:
-    print "fallo"
-plt.xlabel("G/R")
-plt.ylabel("SLI")
-plt.title("SLI")
-plt.xlim(0,2.1)
-plt.ylim(0,1.2)
-plt.savefig('colores_espectros_SLI_GR.png')
-plt.show()
-###################################################3
-
-    
-model_ransac_ipi,line_y_ransac,line_X=ransacfit(BG,spec.i_ipi)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-plt.scatter(BG,spec.i_ipi,s=30, c=color1, alpha=0.9)
-if 1:
- for X in range(len(listafiles)):
-   try:
-    plt.text(BG[X],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
-   except:
-    print "fallo"
-plt.xlabel("B/G")
-plt.ylabel("IPI")
-plt.title("IPI")
-plt.xlim(0,0.9)
-plt.ylim(0,1.2)
-plt.savefig('colores_espectros_IPI_BG.png')
-plt.show()
-
-plt.scatter(GR,spec.i_ipi,s=30, c=color1, alpha=0.9)
-if 1:
- for X in range(len(listafiles)):
-   try:
-    plt.text(GR[X],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
-   except:
-    print "fallo"
-plt.xlabel("G/R")
-plt.ylabel("IPI")
-plt.title("IPI")
-plt.xlim(0,2.1)
-plt.ylim(0,1.2)
-plt.savefig('colores_espectros_IPI_GR.png')
-plt.show()
-
-plt.scatter(BR,spec.i_ipi,s=30, c=color1, alpha=0.9)
-if 1:
- for X in range(len(listafiles)):
-   try:
-    plt.text(BR[X],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
-   except:
-    print "fallo"
-plt.xlabel("(B+R)/G")
-plt.ylabel("IPI")
-plt.title("IPI")
-#plt.xlim(0,1.2)
-#plt.ylim(0,1.2)
-plt.savefig('colores_espectros_IPI_BRG0.png')
-plt.show()
-
-plt.scatter(BR1,spec.i_ipi,s=30, c=color1, alpha=0.9)
-if 0:
- for X in range(len(listafiles)):
-   try:
-    plt.text(BR1[X],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
-   except:
-    print "fallo"
-plt.xlabel("(B-G)/R")
-plt.ylabel("IPI")
-plt.title("IPI")
-#plt.xlim(0,1.2)
-#plt.ylim(0,1.2)
-plt.savefig('colores_espectros_IPI_BRG1.png')
-plt.show()   
-###################################################3
-
-    
-model_ransac_msi,line_y_ransac,line_X=ransacfit(BG,spec.i_msi)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-plt.scatter(BG,spec.i_msi,s=30, c=color1, alpha=0.9)
-if 1:
- for X in range(len(listafiles)):
-   try:
-    plt.text(BG[X],spec.i_msi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
-   except:
-    print "fallo"
-plt.xlabel("B/G")
-plt.ylabel("MSI")
-plt.title("MSI")
-plt.xlim(0,0.9)
-plt.ylim(0,1.2)
-plt.savefig('colores_espectros_MSI_BG.png')
-plt.show()
-
-model_ransac_msigr,line_y_ransac,line_X=ransacfit(GR,spec.i_msi)
-plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
-zmsigr = np.polyfit(GR, spec.i_msi, 3)
-p = np.poly1d(zsligr)
-xp = np.linspace(0, 2, 100)
-plt.scatter(GR,spec.i_msi,s=30, c=color1, alpha=0.9)
-plt.plot(xp, p(xp),'r-')
-if 1:
- for X in range(len(listafiles)):
-   try:
-    plt.text(GR[X],spec.i_msi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
-   except:
-    print "fallo"
-plt.xlabel("G/R")
-plt.ylabel("MSI")
-plt.title("MSI")
-plt.xlim(0,2.1)
-plt.ylim(0,1.2)
-plt.savefig('colores_espectros_MSI_GR.png')
-plt.show()   
-
-asciitable.write(spec,'espectros.txt')
-
-
-from mpl_toolkits.mplot3d import axes3d
-import matplotlib.pyplot as plt
-import numpy as np
-
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-#X, Y, Z = axes3d.get_test_data(0.05)
-ax.scatter(BG, GR, spec.i_msi, c='r', marker='o')
-
-ax.set_xlabel('B/G')
-ax.set_ylabel('G/R')
-ax.set_zlabel('MSI')
-ax.set_xlim(0,1)
-ax.set_ylim(0,2.1)
-ax.set_zlim(0,1.2)
-
-plt.show()
-
-XYZ=np.vstack((BG,GR,spec.i_msi))
-
-
-XYZ1=XYZ.transpose()
-XYZ2=[]
-
-
-plane=fitPlaneOptimize(XYZ1)
-
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-point  = np.mean(XYZ1,0)
-normal = fitPLaneLTSQ(XYZ1)
-
-# a plane is a*x+b*y+c*z+d=0
-# [a,b,c] is the normal. Thus, we have to calculate
-# d and we're set
-d = -point.dot(normal)
-
-# create x,y
-xx, yy = np.meshgrid(range(3), range(3))
-
-# calculate corresponding z
-z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
-
-# plot the surface
-plt3d = plt.figure().gca(projection='3d')
-
-#plt3d.plot_surface(xx, yy, z)
-plt3d.plot_wireframe(xx, yy, z, rstride=1, cstride=1)
-plt3d.scatter(BG, GR, spec.i_msi, c='r', marker='o')
-plt3d.set_title('MSI fit by B/G and G/R')
-plt3d.set_xlim(0,1)
-plt3d.set_ylim(0,2.1)
-plt3d.set_zlim(0,1.2)
-plt3d.set_xlabel('B/G')
-plt3d.set_ylabel('G/R')
-plt3d.set_zlabel('MSI')
-plt.show()
-
-
-##################################
-#
-# Fiting plane IPI
-#
-####################################
-
-XYZ=np.vstack((BG,GR,spec.i_ipi))
-
-
-XYZ1=XYZ.transpose()
-XYZ2=[]
-
-
-plane=fitPlaneOptimize(XYZ1)
-
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-point  = np.mean(XYZ1,0)
-normal = fitPLaneLTSQ(XYZ1)
-
-# a plane is a*x+b*y+c*z+d=0
-# [a,b,c] is the normal. Thus, we have to calculate
-# d and we're set
-d = -point.dot(normal)
-
-# create x,y
-xx, yy = np.meshgrid(range(3), range(3))
-
-# calculate corresponding z
-z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
-
-# plot the surface
-plt3d = plt.figure().gca(projection='3d')
-
-#plt3d.plot_surface(xx, yy, z)
-plt3d.plot_wireframe(xx, yy, z, rstride=1, cstride=1)
-plt3d.scatter(BG, GR, spec.i_ipi, c='r', marker='o')
-plt3d.set_title('IPI fit by B/G and G/R')
-plt3d.set_xlim(0,1)
-plt3d.set_ylim(0,2.1)
-plt3d.set_zlim(0,1.2)
-plt3d.set_xlabel('B/G')
-plt3d.set_ylabel('G/R')
-plt3d.set_zlabel('IPI')
-plt.show()
-
-plt.plot((-normal[0] * BG - normal[1] * GR - d) * 1. /normal[2],spec.i_ipi,'ko')
-if 0:
- for X in range(len(listafiles)):
-   try:
-    plt.text((-normal[0] * BG - normal[1] * GR - d) * 1. /normal[2],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
-   except:
-    print "fallo"
-plt.xlabel("Combination(BGR)")
-plt.ylabel("IPI")
-plt.title("IPI")
-#plt.xlim(0,1.2)
-#plt.ylim(0,1.2)
-plt.savefig('colores_espectros_IPI_BRG1.png')
-plt.show() 
-
-
-##################################
-#
-# Fiting plane SLI
-#
-####################################
-
-XYZ=np.vstack((BG,GR,spec.i_sli))
-
-
-XYZ1=XYZ.transpose()
-XYZ2=[]
-
-
-plane=fitPlaneOptimize(XYZ1)
-
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-point  = np.mean(XYZ1,0)
-normal = fitPLaneLTSQ(XYZ1)
-
-# a plane is a*x+b*y+c*z+d=0
-# [a,b,c] is the normal. Thus, we have to calculate
-# d and we're set
-d = -point.dot(normal)
-
-# create x,y
-xx, yy = np.meshgrid(range(3), range(3))
-
-# calculate corresponding z
-z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
-
-# plot the surface
-plt3d = plt.figure().gca(projection='3d')
-
-#plt3d.plot_surface(xx, yy, z)
-plt3d.plot_wireframe(xx, yy, z, rstride=1, cstride=1)
-plt3d.scatter(BG, GR, spec.i_sli, c='r', marker='o')
-plt3d.set_title('SLI fit by B/G and G/R')
-plt3d.set_xlim(0,1)
-plt3d.set_ylim(0,2.1)
-plt3d.set_zlim(0,1.2)
-plt3d.set_xlabel('B/G')
-plt3d.set_ylabel('G/R')
-plt3d.set_zlabel('SLI')
-plt.show()
-
-XYZ=np.vstack((BG,GR,G_VIIRS))
-
-
-XYZ1=XYZ.transpose()
-XYZ2=[]
-
-
-plane=fitPlaneOptimize(XYZ1)
-
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-point  = np.mean(XYZ1,0)
-normal = fitPLaneLTSQ(XYZ1)
-
-# a plane is a*x+b*y+c*z+d=0
-# [a,b,c] is the normal. Thus, we have to calculate
-# d and we're set
-d = -point.dot(normal)
-
-# create x,y
-xx, yy = np.meshgrid(range(6), range(6))
-
-# calculate corresponding z
-z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
-
-# plot the surface
-plt3d = plt.figure().gca(projection='3d')
-
-#plt3d.plot_surface(xx, yy, z)
-plt3d.plot_wireframe(xx, yy, z, rstride=1, cstride=1)
-plt3d.scatter(BG, GR,G_VIIRS , c='r', marker='o')
-plt3d.set_title('VIIRS fit by B/G and G/R')
-plt3d.set_xlim(0,1)
-plt3d.set_ylim(0,2.1)
-plt3d.set_zlim(0,2.6)
-plt3d.set_xlabel('B/G')
-plt3d.set_ylabel('G/R')
-plt3d.set_zlabel('G/VIIRS')
-plt.show()
-
-print "RANSAC VlG"+str(model_ransac_sli.estimator_.predict(0))+' ' +str(model_ransac_sli.estimator_.coef_)
-print "RANSAC MSI"+str(model_ransac_msi.estimator_.predict(0))+' ' +str(model_ransac_msi.estimator_.coef_)
-print "RANSAC MSI GR"+str(model_ransac_msigr.estimator_.predict(0))+' ' +str(model_ransac_msigr.estimator_.coef_)
-print "RANSAC IPI"+str(model_ransac_ipi.estimator_.predict(0))+' ' +str(model_ransac_ipi.estimator_.coef_)
-print "RANSAC SLI"+str(model_ransac_sli.estimator_.predict(0))+' ' +str(model_ransac_sli.estimator_.coef_)
-print "RANSAC VIIRS"+str(model_ransac_VIIRSGR.estimator_.predict(0))+' ' +str(model_ransac_VIIRSGR.estimator_.coef_)
-print "SLI-BG"
-print zslibg
-print "SLI-GR"
-print zsligr
-print "MSI-GR"
-print zmsigr
-print "VlG-GR"
-print zVlGGR
+    model_ransac_sli,line_y_ransac,line_X=ransacfit(BG,spec.i_sli)
+    plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+    zslibg = np.polyfit(BG, spec.i_sli, 2)
+    p = np.poly1d(zslibg)
+    xp = np.linspace(0, 1, 100)
+    plt.scatter(BG,spec.i_sli,s=30, c=color1, alpha=0.9)
+    plt.plot(xp, p(xp),'r-')
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(BG[X],spec.i_sli[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("B/G")
+    plt.ylabel("SLI")
+    plt.title("SLI")
+    plt.xlim(0,0.9)
+    plt.ylim(0,1.2)
+    plt.savefig('colores_espectros_SLI_BG.png')
+    plt.show()
+
+    model_ransac_sli,line_y_ransac,line_X=ransacfit(GR,spec.i_sli)
+    plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+    zsligr = np.polyfit(GR, spec.i_sli, 3)
+    p = np.poly1d(zsligr)
+    xp = np.linspace(0, 2, 100)
+    plt.scatter(GR,spec.i_sli,s=30, c=color1, alpha=0.9)
+    plt.plot(xp, p(xp),'r-')
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(GR[X],spec.i_sli[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("G/R")
+    plt.ylabel("SLI")
+    plt.title("SLI")
+    plt.xlim(0,2.1)
+    plt.ylim(0,1.2)
+    plt.savefig('colores_espectros_SLI_GR.png')
+    plt.show()
+    ###################################################3
+
+        
+    model_ransac_ipi,line_y_ransac,line_X=ransacfit(BG,spec.i_ipi)
+    plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+    plt.scatter(BG,spec.i_ipi,s=30, c=color1, alpha=0.9)
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(BG[X],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("B/G")
+    plt.ylabel("IPI")
+    plt.title("IPI")
+    plt.xlim(0,0.9)
+    plt.ylim(0,1.2)
+    plt.savefig('colores_espectros_IPI_BG.png')
+    plt.show()
+
+    plt.scatter(GR,spec.i_ipi,s=30, c=color1, alpha=0.9)
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(GR[X],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("G/R")
+    plt.ylabel("IPI")
+    plt.title("IPI")
+    plt.xlim(0,2.1)
+    plt.ylim(0,1.2)
+    plt.savefig('colores_espectros_IPI_GR.png')
+    plt.show()
+
+    plt.scatter(BR,spec.i_ipi,s=30, c=color1, alpha=0.9)
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(BR[X],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("(B+R)/G")
+    plt.ylabel("IPI")
+    plt.title("IPI")
+    #plt.xlim(0,1.2)
+    #plt.ylim(0,1.2)
+    plt.savefig('colores_espectros_IPI_BRG0.png')
+    plt.show()
+
+    plt.scatter(BR1,spec.i_ipi,s=30, c=color1, alpha=0.9)
+    if 0:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(BR1[X],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("(B-G)/R")
+    plt.ylabel("IPI")
+    plt.title("IPI")
+    #plt.xlim(0,1.2)
+    #plt.ylim(0,1.2)
+    plt.savefig('colores_espectros_IPI_BRG1.png')
+    plt.show()   
+    ###################################################3
+
+        
+    model_ransac_msi,line_y_ransac,line_X=ransacfit(BG,spec.i_msi)
+    plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+    plt.scatter(BG,spec.i_msi,s=30, c=color1, alpha=0.9)
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(BG[X],spec.i_msi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("B/G")
+    plt.ylabel("MSI")
+    plt.title("MSI")
+    plt.xlim(0,0.9)
+    plt.ylim(0,1.2)
+    plt.savefig('colores_espectros_MSI_BG.png')
+    plt.show()
+
+    model_ransac_msigr,line_y_ransac,line_X=ransacfit(GR,spec.i_msi)
+    plt.plot(line_X, line_y_ransac, '-b', label='RANSAC regressor')
+    zmsigr = np.polyfit(GR, spec.i_msi, 3)
+    p = np.poly1d(zsligr)
+    xp = np.linspace(0, 2, 100)
+    plt.scatter(GR,spec.i_msi,s=30, c=color1, alpha=0.9)
+    plt.plot(xp, p(xp),'r-')
+    if 1:
+     for X in range(len(listafiles)):
+       try:
+        plt.text(GR[X],spec.i_msi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("G/R")
+    plt.ylabel("MSI")
+    plt.title("MSI")
+    plt.xlim(0,2.1)
+    plt.ylim(0,1.2)
+    plt.savefig('colores_espectros_MSI_GR.png')
+    plt.show()   
+
+    asciitable.write(spec,'espectros.txt')
+
+
+    from mpl_toolkits.mplot3d import axes3d
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    #X, Y, Z = axes3d.get_test_data(0.05)
+    ax.scatter(BG, GR, spec.i_msi, c='r', marker='o')
+
+    ax.set_xlabel('B/G')
+    ax.set_ylabel('G/R')
+    ax.set_zlabel('MSI')
+    ax.set_xlim(0,1)
+    ax.set_ylim(0,2.1)
+    ax.set_zlim(0,1.2)
+
+    plt.show()
+
+    XYZ=np.vstack((BG,GR,spec.i_msi))
+
+
+    XYZ1=XYZ.transpose()
+    XYZ2=[]
+
+
+    plane=fitPlaneOptimize(XYZ1)
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    point  = np.mean(XYZ1,0)
+    normal = fitPLaneLTSQ(XYZ1)
+
+    # a plane is a*x+b*y+c*z+d=0
+    # [a,b,c] is the normal. Thus, we have to calculate
+    # d and we're set
+    d = -point.dot(normal)
+
+    # create x,y
+    xx, yy = np.meshgrid(range(3), range(3))
+
+    # calculate corresponding z
+    z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
+
+    # plot the surface
+    plt3d = plt.figure().gca(projection='3d')
+
+    #plt3d.plot_surface(xx, yy, z)
+    plt3d.plot_wireframe(xx, yy, z, rstride=1, cstride=1)
+    plt3d.scatter(BG, GR, spec.i_msi, c='r', marker='o')
+    plt3d.set_title('MSI fit by B/G and G/R')
+    plt3d.set_xlim(0,1)
+    plt3d.set_ylim(0,2.1)
+    plt3d.set_zlim(0,1.2)
+    plt3d.set_xlabel('B/G')
+    plt3d.set_ylabel('G/R')
+    plt3d.set_zlabel('MSI')
+    plt.show()
+
+
+    ##################################
+    #
+    # Fiting plane IPI
+    #
+    ####################################
+
+    XYZ=np.vstack((BG,GR,spec.i_ipi))
+
+
+    XYZ1=XYZ.transpose()
+    XYZ2=[]
+
+
+    plane=fitPlaneOptimize(XYZ1)
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    point  = np.mean(XYZ1,0)
+    normal = fitPLaneLTSQ(XYZ1)
+
+    # a plane is a*x+b*y+c*z+d=0
+    # [a,b,c] is the normal. Thus, we have to calculate
+    # d and we're set
+    d = -point.dot(normal)
+
+    # create x,y
+    xx, yy = np.meshgrid(range(3), range(3))
+
+    # calculate corresponding z
+    z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
+
+    # plot the surface
+    plt3d = plt.figure().gca(projection='3d')
+
+    #plt3d.plot_surface(xx, yy, z)
+    plt3d.plot_wireframe(xx, yy, z, rstride=1, cstride=1)
+    plt3d.scatter(BG, GR, spec.i_ipi, c='r', marker='o')
+    plt3d.set_title('IPI fit by B/G and G/R')
+    plt3d.set_xlim(0,1)
+    plt3d.set_ylim(0,2.1)
+    plt3d.set_zlim(0,1.2)
+    plt3d.set_xlabel('B/G')
+    plt3d.set_ylabel('G/R')
+    plt3d.set_zlabel('IPI')
+    plt.show()
+
+    plt.plot((-normal[0] * BG - normal[1] * GR - d) * 1. /normal[2],spec.i_ipi,'ko')
+    if 0:
+     for X in range(len(listafiles)):
+       try:
+        plt.text((-normal[0] * BG - normal[1] * GR - d) * 1. /normal[2],spec.i_ipi[X]+0.01,str(spec[X].num),ha='right', va='bottom')
+       except:
+        print "fallo"
+    plt.xlabel("Combination(BGR)")
+    plt.ylabel("IPI")
+    plt.title("IPI")
+    #plt.xlim(0,1.2)
+    #plt.ylim(0,1.2)
+    plt.savefig('colores_espectros_IPI_BRG1.png')
+    plt.show() 
+
+
+    ##################################
+    #
+    # Fiting plane SLI
+    #
+    ####################################
+
+    XYZ=np.vstack((BG,GR,spec.i_sli))
+
+
+    XYZ1=XYZ.transpose()
+    XYZ2=[]
+
+
+    plane=fitPlaneOptimize(XYZ1)
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    point  = np.mean(XYZ1,0)
+    normal = fitPLaneLTSQ(XYZ1)
+
+    # a plane is a*x+b*y+c*z+d=0
+    # [a,b,c] is the normal. Thus, we have to calculate
+    # d and we're set
+    d = -point.dot(normal)
+
+    # create x,y
+    xx, yy = np.meshgrid(range(3), range(3))
+
+    # calculate corresponding z
+    z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
+
+    # plot the surface
+    plt3d = plt.figure().gca(projection='3d')
+
+    #plt3d.plot_surface(xx, yy, z)
+    plt3d.plot_wireframe(xx, yy, z, rstride=1, cstride=1)
+    plt3d.scatter(BG, GR, spec.i_sli, c='r', marker='o')
+    plt3d.set_title('SLI fit by B/G and G/R')
+    plt3d.set_xlim(0,1)
+    plt3d.set_ylim(0,2.1)
+    plt3d.set_zlim(0,1.2)
+    plt3d.set_xlabel('B/G')
+    plt3d.set_ylabel('G/R')
+    plt3d.set_zlabel('SLI')
+    plt.show()
+
+    XYZ=np.vstack((BG,GR,G_VIIRS))
+
+
+    XYZ1=XYZ.transpose()
+    XYZ2=[]
+
+
+    plane=fitPlaneOptimize(XYZ1)
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    point  = np.mean(XYZ1,0)
+    normal = fitPLaneLTSQ(XYZ1)
+
+    # a plane is a*x+b*y+c*z+d=0
+    # [a,b,c] is the normal. Thus, we have to calculate
+    # d and we're set
+    d = -point.dot(normal)
+
+    # create x,y
+    xx, yy = np.meshgrid(range(6), range(6))
+
+    # calculate corresponding z
+    z = (-normal[0] * xx - normal[1] * yy - d) * 1. /normal[2]
+
+    # plot the surface
+    plt3d = plt.figure().gca(projection='3d')
+
+    #plt3d.plot_surface(xx, yy, z)
+    plt3d.plot_wireframe(xx, yy, z, rstride=1, cstride=1)
+    plt3d.scatter(BG, GR,G_VIIRS , c='r', marker='o')
+    plt3d.set_title('VIIRS fit by B/G and G/R')
+    plt3d.set_xlim(0,1)
+    plt3d.set_ylim(0,2.1)
+    plt3d.set_zlim(0,2.6)
+    plt3d.set_xlabel('B/G')
+    plt3d.set_ylabel('G/R')
+    plt3d.set_zlabel('G/VIIRS')
+    plt.show()
+
+    print "RANSAC VlG"+str(model_ransac_sli.estimator_.predict(0))+' ' +str(model_ransac_sli.estimator_.coef_)
+    print "RANSAC MSI"+str(model_ransac_msi.estimator_.predict(0))+' ' +str(model_ransac_msi.estimator_.coef_)
+    print "RANSAC MSI GR"+str(model_ransac_msigr.estimator_.predict(0))+' ' +str(model_ransac_msigr.estimator_.coef_)
+    print "RANSAC IPI"+str(model_ransac_ipi.estimator_.predict(0))+' ' +str(model_ransac_ipi.estimator_.coef_)
+    print "RANSAC SLI"+str(model_ransac_sli.estimator_.predict(0))+' ' +str(model_ransac_sli.estimator_.coef_)
+    print "RANSAC VIIRS"+str(model_ransac_VIIRSGR.estimator_.predict(0))+' ' +str(model_ransac_VIIRSGR.estimator_.coef_)
+    print "SLI-BG"
+    print zslibg
+    print "SLI-GR"
+    print zsligr
+    print "MSI-GR"
+    print zmsigr
+    print "VlG-GR"
+    print zVlGGR

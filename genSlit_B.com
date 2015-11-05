@@ -15,5 +15,5 @@ outfile.dat
 1
 0
 n
-SPECTRUM0005.u
+LED_Moncloa.u
 teescribo
